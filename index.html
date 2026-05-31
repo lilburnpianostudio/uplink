@@ -110,11 +110,11 @@
   .input-wrap { position: relative; flex: 1; display: flex; flex-direction: column; }
   textarea {
     width: 100%; flex: 1; min-height: 200px; background: transparent;
-    border: none; padding: 12px 4px; font-size: 14px;
+    border: none; padding: 12px 4px; font-size: 20px;
     font-family: 'Courier New'; color: #00FF41; line-height: 1.65;
     resize: none; caret-color: transparent; box-shadow: none; cursor: none;
   }
-  textarea::placeholder { color: #003300; font-size: 13px; }
+  textarea::placeholder { color: #003300; font-size: 18px; }
   textarea:focus { outline: none; }
   .blink-cursor {
     position: absolute; top: 12px; left: 4px; font-size: 15px;
@@ -144,6 +144,24 @@
   }
   .raw-signal-btn:active { color: #00FF41; border-color: #00FF41; }
 
+  /* Sender selector */
+  .sender-bar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 0 4px; margin-bottom: 4px;
+  }
+  .sender-label { font-size: 11px; color: #006600; letter-spacing: 2px; }
+  .sender-option {
+    display: flex; align-items: center; gap: 7px; cursor: pointer;
+  }
+  .sender-check {
+    width: 22px; height: 22px; border: 1px solid #004400; border-radius: 3px;
+    background: #000; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #00FF41; text-shadow: 0 0 5px #00FF41;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .sender-check.active { border-color: #00FF41; background: #001800; }
+  .sender-name { font-size: 15px; color: #00cc33; letter-spacing: 2px; font-weight: 700; }
+
   /* ══ SCREEN 2 — PROCESSING ══ */
   #screen-matrix-full { background: transparent; z-index: 15; padding-top: 0; justify-content: center; align-items: center; }
   .matrix-takeover { text-align: center; padding: 20px; z-index: 20; position: relative; }
@@ -161,7 +179,7 @@
   .review-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 8px; scrollbar-width: none; }
   .review-scroll::-webkit-scrollbar { display: none; }
   .raw-block { border: 1px solid #001f00; border-radius: 6px; padding: 9px 12px; margin-bottom: 12px; background: rgba(0,5,0,0.5); }
-  .block-label { font-size: 14px; letter-spacing: 2px; color: #00cc33; margin-bottom: 10px; text-transform: uppercase; }
+  .block-label { font-size: 16px; letter-spacing: 2px; color: #00cc33; margin-bottom: 10px; text-transform: uppercase; }
   .raw-text { font-size: 15px; color: #009922; line-height: 1.6; font-style: italic; }
   .agent-section { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; padding: 16px 14px; border: 1px solid #003a00; border-radius: 8px; background: rgba(0,12,0,0.72); box-shadow: 0 0 14px rgba(0,255,65,0.06); }
   .hacker-icon { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; padding-top: 2px; }
@@ -169,26 +187,26 @@
   .icon-label { font-size: 12px; color: #00FF41; letter-spacing: 2px; text-shadow: 0 0 6px #00FF41; font-weight: 700; }
   .icon-status { font-size: 7px; color: #00aa2a; letter-spacing: 1px; animation: blink 2.2s step-end infinite; }
   .agent-content { flex: 1; min-width: 0; }
-  .agent-content .block-label { color: #00FF41; font-size: 14px; letter-spacing: 2px; }
+  .agent-content .block-label { color: #00FF41; font-size: 16px; letter-spacing: 2px; }
   .brief-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #001800; transition: opacity 0.2s; }
   .brief-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
   .brief-item.excluded { opacity: 0.3; }
   .item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-  .matrix-check { flex-shrink: 0; width: 20px; height: 20px; border: 1px solid #00FF41; border-radius: 3px; background: #001800; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; color: #00FF41; text-shadow: 0 0 6px #00FF41; transition: all 0.15s; }
+  .matrix-check { flex-shrink: 0; width: 28px; height: 28px; border: 1px solid #00FF41; border-radius: 3px; background: #001800; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #00FF41; text-shadow: 0 0 6px #00FF41; transition: all 0.15s; }
   .matrix-check.unchecked { border-color: #003300; color: transparent; background: #000; }
-  .agent-tag { display: inline-block; background: #001a00; color: #00FF41; font-size: 14px; font-weight: 700; letter-spacing: 2px; padding: 5px 14px; border-radius: 3px; border: 1px solid #004400; text-shadow: 0 0 5px #00FF41; }
+  .agent-tag { display: inline-block; background: #001a00; color: #00FF41; font-size: 18px; font-weight: 700; letter-spacing: 2px; padding: 7px 16px; border-radius: 4px; border: 1px solid #004400; text-shadow: 0 0 5px #00FF41; }
   .agent-tag.flag { color: #ffaa00; border-color: #554400; background: #150f00; text-shadow: 0 0 5px #ffaa00; }
-  .brief-lines { margin-top: 8px; }
-  .brief-line { display: flex; gap: 8px; font-size: 14px; line-height: 1.9; }
-  .line-key { color: #00aa2a; font-size: 16px; letter-spacing: 1px; flex-shrink: 0; padding-top: 1px; min-width: 65px; font-weight: 700; }
-  .line-val { color: #00FF41; font-size: 18px; flex: 1; line-height: 1.7; border-bottom: 1px dashed transparent; outline: none; min-width: 0; word-break: break-word; }
+  .brief-lines { margin-top: 10px; }
+  .brief-line { display: flex; gap: 10px; font-size: 18px; line-height: 2; }
+  .line-key { color: #00aa2a; font-size: 18px; letter-spacing: 1px; flex-shrink: 0; padding-top: 1px; min-width: 78px; font-weight: 700; }
+  .line-val { color: #00FF41; font-size: 20px; flex: 1; line-height: 1.7; border-bottom: 1px dashed transparent; outline: none; min-width: 0; word-break: break-word; }
   .line-val:focus { border-bottom-color: #004400; color: #00FF41; caret-color: #00FF41; }
-  .suggestions-block { border: 1px solid #002800; border-radius: 8px; padding: 12px; background: rgba(0,8,0,0.6); margin-bottom: 12px; }
-  .suggestions-block .block-label { color: #009922; margin-bottom: 8px; }
-  .suggestion-item { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-bottom: 1px solid #001500; cursor: pointer; }
+  .suggestions-block { border: 1px solid #002800; border-radius: 8px; padding: 14px; background: rgba(0,8,0,0.6); margin-bottom: 12px; }
+  .suggestions-block .block-label { color: #009922; margin-bottom: 10px; }
+  .suggestion-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #001500; cursor: pointer; }
   .suggestion-item:last-child { border-bottom: none; padding-bottom: 0; }
   .suggestion-item:first-child { padding-top: 0; }
-  .sug-text { font-size: 17px; color: #00cc33; line-height: 1.6; flex: 1; }
+  .sug-text { font-size: 20px; color: #00cc33; line-height: 1.6; flex: 1; }
   .suggestion-item.checked .sug-text { color: #00FF41; }
   .review-actions { padding: 8px 14px 14px; flex-shrink: 0; border-top: 1px solid #001800; background: rgba(0,0,0,0.6); }
 
@@ -287,6 +305,19 @@
   <!-- SCREEN 1: WRITE -->
   <div id="screen-write" class="screen">
     <div class="terminal-label" style="padding:0 16px; margin-bottom:7px; margin-top:2px;">INPUT TRANSMISSION</div>
+    <div style="padding:0 16px;">
+      <div class="sender-bar">
+        <span class="sender-label">FROM:</span>
+        <div class="sender-option" onclick="selectSender('BEN')">
+          <div class="sender-check active" id="check-BEN">✓</div>
+          <span class="sender-name">BEN</span>
+        </div>
+        <div class="sender-option" onclick="selectSender('BREE')">
+          <div class="sender-check" id="check-BREE"></div>
+          <span class="sender-name">BREE</span>
+        </div>
+      </div>
+    </div>
     <div class="input-wrap" style="padding:0 16px;">
       <textarea id="user-input" placeholder="[ BEGIN TRANSMISSION... ]"></textarea>
       <span class="blink-cursor hidden" id="blink-cursor">_</span>
@@ -323,7 +354,7 @@
             <line x1="36" y1="4" x2="36" y2="68" stroke="#00FF41" stroke-width="0.4" opacity="0.2"/>
           </svg>
         </div>
-        <div class="encode-label">[ ENCODE MESSAGE ]</div>
+        <div class="encode-label">[ JACK IN ]</div>
         <div class="encode-sub">claude organizes before sending</div>
       </button>
       <button class="raw-signal-btn" onclick="sendRaw()">[ RAW SIGNAL — BYPASS CLAUDE ]</button>
@@ -652,6 +683,25 @@ function showScreen(id){
 }
 
 // ════════════════════════════════════════
+// SENDER SELECTOR
+// ════════════════════════════════════════
+let currentSender = 'BEN';
+
+function selectSender(name) {
+  currentSender = name;
+  ['BEN','BREE'].forEach(n => {
+    const el = document.getElementById('check-' + n);
+    if (n === name) {
+      el.classList.add('active');
+      el.textContent = '✓';
+    } else {
+      el.classList.remove('active');
+      el.textContent = '';
+    }
+  });
+}
+
+// ════════════════════════════════════════
 // TEXTAREA CURSOR
 // ════════════════════════════════════════
 const ta=document.getElementById('user-input');
@@ -863,7 +913,7 @@ async function startEncoding(){
 async function transmitToSource(){
   const now=new Date();
   const ts=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
-  const filename=`signal-${ts}.md`;
+  const filename=`signal-${currentSender}-${ts}.md`;
 
   // Collect checked brief items
   const items=[];
@@ -880,7 +930,7 @@ async function transmitToSource(){
 
   // Build markdown file
   const rawText=document.getElementById('raw-display').textContent;
-  let md=`# Signal — ${ts.replace(/-(\d{4})$/,' $1').replace(/-/g,'-')}\n_Source: UPLINK / Ben Thomas_\n\n---\n\n## Decoded Brief\n\n`;
+  let md=`# Signal — ${ts.replace(/-(\d{4})$/,' $1').replace(/-/g,'-')}\n_Source: UPLINK / ${currentSender}_\n\n---\n\n## Decoded Brief\n\n`;
   items.forEach(item=>{
     md+=`**${item.agent}**\n`;
     md+=`TARGET: ${item.target}\nACTION: ${item.action}\nSTATUS: ${item.status}\nNEXT: ${item.next}\n\n`;
@@ -954,8 +1004,8 @@ async function sendRaw(){
   if(!raw){ta.focus();return;}
   const now=new Date();
   const ts=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
-  const filename=`signal-raw-${ts}.md`;
-  const md=`# Raw Signal — ${ts}\n_Source: UPLINK / Ben Thomas — unprocessed_\n\n---\n\n${raw}\n`;
+  const filename=`signal-raw-${currentSender}-${ts}.md`;
+  const md=`# Raw Signal — ${ts}\n_Source: UPLINK / ${currentSender} — unprocessed_\n\n---\n\n${raw}\n`;
   document.getElementById('sent-filename').textContent=filename;
   const webhookUrl=getWebhook();
   if(webhookUrl){
