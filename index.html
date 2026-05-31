@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="UPLINK">
 <title>UPLINK</title>
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser/dist/msal-browser.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -962,73 +961,110 @@ async function sendRaw(){
 }
 
 // ════════════════════════════════════════
-// MICROSOFT GRAPH / MSAL
+// MICROSOFT OAUTH — PKCE (no external library)
 // ════════════════════════════════════════
-const MSAL_CONFIG={
-  auth:{
-    clientId:'10cb66fb-13a0-4999-a9fa-dbfa245d0247',
-    authority:'https://login.microsoftonline.com/c12a9d4f-9d34-44de-a16b-3ebae0474c37',
-    redirectUri:'https://lilburnpianostudio.github.io/uplink/',
-  },
-  cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}
-};
-const MS_SCOPES=['Files.ReadWrite','offline_access'];
-let msalApp=null;
+const MS_CLIENT_ID='10cb66fb-13a0-4999-a9fa-dbfa245d0247';
+const MS_TENANT_ID='c12a9d4f-9d34-44de-a16b-3ebae0474c37';
+const MS_REDIRECT='https://lilburnpianostudio.github.io/uplink/';
+const MS_SCOPE='Files.ReadWrite offline_access';
 
-function getMsalApp(){
-  if(!msalApp && typeof msal!=='undefined'){
-    msalApp=new msal.PublicClientApplication(MSAL_CONFIG);
-  }
-  return msalApp;
+function b64url(buf){
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function pkce_sha256(str){
+  return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+}
+function randStr(){ return b64url(crypto.getRandomValues(new Uint8Array(32))); }
+
+async function connectMicrosoft(){
+  const verifier=randStr(), state=randStr();
+  const challenge=b64url(await pkce_sha256(verifier));
+  localStorage.setItem('ms_v',verifier);
+  localStorage.setItem('ms_s',state);
+  const p=new URLSearchParams({
+    client_id:MS_CLIENT_ID,response_type:'code',
+    redirect_uri:MS_REDIRECT,scope:MS_SCOPE,
+    code_challenge:challenge,code_challenge_method:'S256',
+    state,prompt:'select_account'
+  });
+  window.location='https://login.microsoftonline.com/'+MS_TENANT_ID+'/oauth2/v2.0/authorize?'+p;
+}
+
+async function handleMsCallback(){
+  const p=new URLSearchParams(window.location.search);
+  const code=p.get('code'),state=p.get('state');
+  if(!code||state!==localStorage.getItem('ms_s')) return false;
+  const body=new URLSearchParams({
+    client_id:MS_CLIENT_ID,grant_type:'authorization_code',
+    code,redirect_uri:MS_REDIRECT,
+    code_verifier:localStorage.getItem('ms_v')
+  });
+  try{
+    const resp=await fetch('https://login.microsoftonline.com/'+MS_TENANT_ID+'/oauth2/v2.0/token',
+      {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const data=await resp.json();
+    if(data.access_token){
+      localStorage.setItem('ms_at',data.access_token);
+      localStorage.setItem('ms_rt',data.refresh_token||'');
+      localStorage.setItem('ms_exp',Date.now()+(data.expires_in*1000));
+      try{
+        const pl=JSON.parse(atob(data.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+        localStorage.setItem('ms_user',pl.preferred_username||pl.email||'connected');
+      }catch{}
+      localStorage.removeItem('ms_v');localStorage.removeItem('ms_s');
+      return true;
+    }
+  }catch(e){console.error('Token exchange error:',e);}
+  return false;
 }
 
 async function getMsToken(){
-  const app=getMsalApp();
-  if(!app) return null;
-  const accounts=app.getAllAccounts();
-  if(!accounts.length) return null;
+  const token=localStorage.getItem('ms_at');
+  const expiry=parseInt(localStorage.getItem('ms_exp')||'0');
+  const refresh=localStorage.getItem('ms_rt');
+  if(!token) return null;
+  if(Date.now()<expiry-60000) return token;
+  if(!refresh) return null;
   try{
-    const resp=await app.acquireTokenSilent({scopes:MS_SCOPES,account:accounts[0]});
-    return resp.accessToken;
-  }catch(e){
-    // Silent failed — token expired, need re-login
-    console.warn('Silent token failed, re-login needed');
-    return null;
-  }
-}
-
-async function connectMicrosoft(){
-  const app=getMsalApp();
-  if(!app){alert('MSAL not loaded. Check connection.');return;}
-  await app.loginRedirect({scopes:MS_SCOPES});
+    const body=new URLSearchParams({
+      client_id:MS_CLIENT_ID,grant_type:'refresh_token',
+      refresh_token:refresh,scope:MS_SCOPE
+    });
+    const resp=await fetch('https://login.microsoftonline.com/'+MS_TENANT_ID+'/oauth2/v2.0/token',
+      {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const data=await resp.json();
+    if(data.access_token){
+      localStorage.setItem('ms_at',data.access_token);
+      localStorage.setItem('ms_exp',Date.now()+(data.expires_in*1000));
+      if(data.refresh_token) localStorage.setItem('ms_rt',data.refresh_token);
+      return data.access_token;
+    }
+  }catch(e){console.warn('Refresh failed:',e);}
+  return null;
 }
 
 function disconnectMicrosoft(){
-  const app=getMsalApp();
-  if(!app) return;
-  const accounts=app.getAllAccounts();
-  if(accounts.length) app.logoutRedirect({account:accounts[0]});
+  ['ms_at','ms_rt','ms_exp','ms_user','ms_v','ms_s'].forEach(k=>localStorage.removeItem(k));
   updateMsStatus();
 }
 
 function updateMsStatus(){
-  const app=getMsalApp();
   const statusEl=document.getElementById('ms-status');
   const connectBtn=document.getElementById('ms-connect-btn');
   const disconnectBtn=document.getElementById('ms-disconnect-btn');
   if(!statusEl) return;
-  if(!app){statusEl.textContent='MSAL not available';return;}
-  const accounts=app.getAllAccounts();
-  if(accounts.length){
-    statusEl.textContent='● CONNECTED — '+accounts[0].username;
+  const user=localStorage.getItem('ms_user');
+  if(user){
+    statusEl.textContent='● CONNECTED — '+user;
     statusEl.style.color='#00FF41';
-    connectBtn.style.display='none';
-    disconnectBtn.style.display='block';
+    if(connectBtn) connectBtn.style.display='none';
+    if(disconnectBtn) disconnectBtn.style.display='block';
   } else {
     statusEl.textContent='○ NOT CONNECTED';
     statusEl.style.color='#666600';
-    connectBtn.style.display='block';
-    disconnectBtn.style.display='none';
+    if(connectBtn) connectBtn.style.display='block';
+    if(disconnectBtn) disconnectBtn.style.display='none';
   }
 }
 
@@ -1036,13 +1072,11 @@ function updateMsStatus(){
 // INIT
 // ════════════════════════════════════════
 window.addEventListener('load', async ()=>{
-  // Handle MSAL redirect response first
-  const app=getMsalApp();
-  if(app){
-    try{
-      const resp=await app.handleRedirectPromise();
-      if(resp) console.log('MSAL login complete:',resp.account.username);
-    }catch(e){console.error('MSAL redirect error:',e);}
+  // Handle Microsoft OAuth callback
+  if(window.location.search.includes('code=')){
+    const ok=await handleMsCallback();
+    if(ok) console.log('Microsoft connected:',localStorage.getItem('ms_user'));
+    history.replaceState({},'',window.location.pathname);
   }
 
   // ?reset=1 forces setup screen
