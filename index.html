@@ -407,7 +407,7 @@
     <div class="sent-sub">MESSAGE RECEIVED. STAND BY.</div>
     <div class="terminal-box">
       <div class="t-row">&gt; STATUS: <span>DELIVERED ✓</span></div>
-      <div class="t-row">&gt; DESTINATION: <span>[CLASSIFIED]</span></div>
+      <div class="t-row">&gt; METHOD: <span id="sent-delivery">--</span></div>
       <div class="t-row">&gt; FILE: <span id="sent-filename">--</span></div>
       <div class="t-row dim">&gt; SIGNAL ACKNOWLEDGED. AWAIT RESPONSE.</div>
     </div>
@@ -891,7 +891,7 @@ async function transmitToSource(){
   document.getElementById('sent-filename').textContent=filename;
 
   // Try Graph API → webhook → Web Share → clipboard
-  let sent=false;
+  let sent=false, deliveryMethod='UNKNOWN';
 
   // Option A: Graph API (best — direct to Team-Inbox)
   try{
@@ -901,10 +901,19 @@ async function transmitToSource(){
         `https://graph.microsoft.com/v1.0/me/drive/root:/PKA-Business/Team-Inbox/${encodeURIComponent(filename)}:/content`,
         {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:md}
       );
-      if(graphResp.ok){sent=true;console.log('Graph API write success');}
-      else{console.warn('Graph API write failed:',graphResp.status);}
+      if(graphResp.ok){
+        sent=true;
+        deliveryMethod='ONEDRIVE DIRECT ✓';
+      } else {
+        const errBody=await graphResp.json().catch(()=>({}));
+        deliveryMethod='GRAPH FAILED: '+graphResp.status+' — '+(errBody.error?.message||'unknown');
+        console.warn('Graph API failed:',graphResp.status, errBody);
+      }
     }
-  }catch(e){console.warn('Graph API error:',e);}
+  }catch(e){
+    deliveryMethod='GRAPH ERROR: '+e.message;
+    console.warn('Graph API error:',e);
+  }
 
   // Option B: Power Automate webhook
   if(!sent){
@@ -912,7 +921,7 @@ async function transmitToSource(){
     if(webhookUrl){
       try{
         await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});
-        sent=true;
+        sent=true; deliveryMethod='WEBHOOK ✓';
       }catch(e){console.warn('Webhook failed:',e);}
     }
   }
@@ -922,13 +931,15 @@ async function transmitToSource(){
     try{
       const file=new File([md],filename,{type:'text/plain'});
       await navigator.share({title:'Signal '+ts,files:[file]});
-      sent=true;
+      sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
     }catch(e){
       try{await navigator.clipboard.writeText(md);}catch{}
+      deliveryMethod='CLIPBOARD — paste manually';
       alert('Brief copied. Paste into Team-Inbox as '+filename);
     }
   }
 
+  document.getElementById('sent-delivery').textContent=deliveryMethod;
   showScreen('screen-sent');
 }
 
