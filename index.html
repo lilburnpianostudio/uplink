@@ -14,7 +14,7 @@
     font-family: 'Courier New', Courier, monospace;
     background: #000;
     min-height: 100vh;
-    display: none;
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -45,7 +45,7 @@
   /* ── Intro overlay ── */
   #intro-overlay {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 100; display: flex; flex-direction: column;
+    z-index: 100; display: none; flex-direction: column;
     justify-content: flex-start; align-items: flex-start;
     padding: 116px 24px 0;
     background: rgba(0,0,0,0.0);
@@ -92,8 +92,8 @@
   .setup-input {
     width: 100%; background: rgba(0,10,0,0.8); border: 1px solid #004400;
     border-radius: 6px; padding: 12px; font-size: 16px;
-     touch-action: manipulation;font-family: 'Courier New'; color: #00FF41; caret-color: #00FF41;
-    letter-spacing: 1px;
+    font-family: 'Courier New'; color: #00FF41; caret-color: #00FF41;
+    letter-spacing: 1px; touch-action: manipulation;
   }
   .setup-input:focus { outline: none; border-color: #00FF41; }
   .setup-input::placeholder { color: #003300; }
