@@ -604,6 +604,8 @@ function saveSetup(){
   localStorage.setItem('uplink_api_key',k);
   if(w)localStorage.setItem('uplink_webhook_url',w);
   localStorage.setItem('uplink_setup_done','1');
+  // Clean URL so ?reset=1 doesn't re-trigger on refresh
+  history.replaceState({},'',window.location.pathname);
   showScreen('screen-write');
   runIntroSequence();
 }
@@ -628,13 +630,13 @@ function toggleSettings(){
 // SCREEN MANAGEMENT
 // ════════════════════════════════════════
 function showScreen(id){
+  // Kill intro whenever we leave the write screen
+  if(id !== 'screen-write') skipIntro();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   currentScreen=id.replace('screen-','');
   document.getElementById('sys-header').style.display=(id==='screen-matrix-full')?'none':'';
-  if(id==='screen-write'){
-    document.getElementById('user-input').focus();
-  }
+  if(id==='screen-write') document.getElementById('user-input').focus();
 }
 
 // ════════════════════════════════════════
@@ -651,25 +653,74 @@ ta.addEventListener('input',()=>{cur.classList.toggle('hidden',ta.value.length>0
 // ════════════════════════════════════════
 async function callClaude(input){
   const apiKey=getApiKey();
-  if(!apiKey)throw new Error('No API key configured.');
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'x-api-key':apiKey,
-      'anthropic-version':'2023-06-01',
-      'content-type':'application/json',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body:JSON.stringify({
-      model:'claude-haiku-4-5-20251001',
-      max_tokens:1024,
-      system:SYSTEM_PROMPT,
-      messages:[{role:'user',content:input}]
-    })
-  });
-  if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||'API error '+resp.status);}
+  if(!apiKey) throw new Error('KEY_MISSING: No API key. Tap CONFIG to add one.');
+
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'content-type':'application/json',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1024,
+        system:SYSTEM_PROMPT,
+        messages:[{role:'user',content:input}]
+      })
+    });
+  } catch(e) {
+    throw new Error('NETWORK: Cannot reach Anthropic. Check internet connection.');
+  }
+
+  if(!resp.ok){
+    const e=await resp.json().catch(()=>({}));
+    const msg=e.error?.message||'HTTP '+resp.status;
+    if(resp.status===401) throw new Error('KEY_INVALID: API key rejected. Tap CONFIG → enter a new key from console.anthropic.com');
+    if(resp.status===429) throw new Error('RATE_LIMIT: Too many requests. Wait 30 seconds and try again.');
+    throw new Error('API_ERROR: '+msg);
+  }
+
   const data=await resp.json();
-  return data.content[0].text;
+  const text=data.content?.[0]?.text;
+  if(!text) throw new Error('EMPTY: Claude returned no content. Try again.');
+  return text;
+}
+
+// ════════════════════════════════════════
+// PARSE CLAUDE RESPONSE
+// ════════════════════════════════════════
+function parseClaudeResponse(result){
+  // Strategy 1: pure JSON array
+  try{
+    const p=JSON.parse(result.trim());
+    if(Array.isArray(p)&&p.length>0) return p;
+  }catch{}
+
+  // Strategy 2: JSON array embedded in text
+  try{
+    const match=result.match(/\[[\s\S]*?\]/);
+    if(match){
+      const p=JSON.parse(match[0]);
+      if(Array.isArray(p)&&p.length>0) return p;
+    }
+  }catch{}
+
+  // Strategy 3: Claude returned plain text — wrap it as a raw note
+  if(result.trim().length>0){
+    return [{
+      agent:'VERA',flag:false,
+      target:'Raw Note',
+      action:result.trim().substring(0,300),
+      status:'Formatted as plain text — not JSON',
+      next:'Review and route manually'
+    }];
+  }
+
+  return null; // complete failure
 }
 
 // ════════════════════════════════════════
@@ -759,25 +810,35 @@ async function startEncoding(){
 
   // Call Claude
   let briefItems=[];
+  const statusEl=document.getElementById('claude-status');
   try{
-    const status=document.getElementById('claude-status');
-    setTimeout(()=>{status.textContent='> CLAUDE PROCESSING...';status.className='visible';},1600);
+    setTimeout(()=>{statusEl.textContent='> AGENT ONLINE — DECODING...';statusEl.className='visible';},1600);
     const result=await callClaude(raw);
-    let parsed;
-    try{parsed=JSON.parse(result);}
-    catch{
-      // Try to extract JSON from response
-      const match=result.match(/\[[\s\S]*\]/);
-      parsed=match?JSON.parse(match[0]):[];
+    statusEl.textContent='> PARSING BRIEF...';
+    const parsed=parseClaudeResponse(result);
+    if(!parsed){
+      throw new Error('PARSE_FAIL: Could not read Claude response. Try again.');
     }
-    briefItems=Array.isArray(parsed)?parsed:[];
-    if(briefItems.length===0)throw new Error('Empty response');
-    status.textContent='> BRIEF DECODED.';
-    await new Promise(r=>setTimeout(r,800));
+    briefItems=parsed;
+    statusEl.textContent='> BRIEF DECODED. ✓';
+    await new Promise(r=>setTimeout(r,700));
   }catch(err){
     console.error('Claude error:',err);
-    // Fallback brief on error
-    briefItems=[{agent:'VERA',flag:false,target:'Manual Review',action:'Claude could not decode — review raw input',status:err.message,next:'Check API key in CONFIG settings'}];
+    const errCode=err.message.split(':')[0];
+    const errDetail=err.message.includes(':')?err.message.split(':').slice(1).join(':').trim():err.message;
+    // Clear, actionable error brief
+    briefItems=[{
+      agent:'VERA',
+      flag:true,
+      target:'⚠ CONNECTION ERROR',
+      action:errDetail,
+      status:errCode,
+      next: errCode==='KEY_INVALID'||errCode==='KEY_MISSING'
+        ? 'Tap CONFIG in the header to update your API key'
+        : 'Check your connection and try again, or tap RAW SIGNAL to bypass Claude'
+    }];
+    statusEl.textContent='> ERROR — SEE BRIEF';
+    await new Promise(r=>setTimeout(r,700));
   }
 
   renderBrief(briefItems);
