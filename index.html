@@ -63,7 +63,7 @@
 
   /* ── Header ── */
   .sys-header {
-    position: absolute; top: 0; left: 0; right: 0; z-index: 20;
+    position: absolute; top: 0; left: 0; right: 0; z-index: 150;
     background: rgba(0,0,0,0.9); border-bottom: 1px solid #003300;
   }
   .status-bar {
@@ -250,7 +250,7 @@
         <h1>⬡ UPLINK</h1>
         <p>// SECURE TERMINAL //</p>
       </div>
-      <button class="settings-btn" onclick="toggleSettings()">CONFIG</button>
+      <button class="settings-btn" onclick="event.stopPropagation();toggleSettings()">CONFIG</button>
     </div>
   </div>
 
@@ -625,14 +625,18 @@ function saveSettings(){
   toggleSettings();
 }
 function toggleSettings(){
-  const p=document.getElementById('settings-panel');
-  const isOpen=p.classList.contains('active');
-  if(isOpen){p.classList.remove('active');}
-  else{
-    document.getElementById('settings-webhook').value=getWebhook();
-    p.classList.add('active');
-    updateMsStatus();
-  }
+  try{
+    const p=document.getElementById('settings-panel');
+    if(!p){alert('ERROR: settings panel not found');return;}
+    const isOpen=p.classList.contains('active');
+    if(isOpen){
+      p.classList.remove('active');
+    } else {
+      try{document.getElementById('settings-webhook').value=getWebhook();}catch(e){}
+      p.classList.add('active');
+      try{updateMsStatus();}catch(e){}
+    }
+  }catch(e){alert('CONFIG error: '+e.message);}
 }
 
 // ════════════════════════════════════════
