@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="UPLINK">
 <title>UPLINK</title>
+<script src="https://alcdn.msauth.net/browser/3.11.1/js/msal-browser.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -417,16 +418,23 @@
   <!-- SETTINGS PANEL -->
   <div id="settings-panel">
     <div class="setup-title">SYSTEM CONFIGURATION</div>
+
     <div class="setup-field">
       <div class="setup-label">AGENT KEY</div>
       <input type="password" class="setup-input" id="settings-api-key" placeholder="sk-ant-api03-..." autocomplete="off"/>
       <div class="setup-note">leave blank to keep existing key</div>
     </div>
+
+    <hr class="setup-divider"/>
+
     <div class="setup-field">
-      <div class="setup-label">MOTHERSHIP URL</div>
-      <input type="text" class="setup-input" id="settings-webhook" placeholder="power automate webhook url" autocomplete="off"/>
+      <div class="setup-label">ONEDRIVE CONNECTION</div>
+      <div id="ms-status" class="setup-note" style="margin-bottom:10px;">checking...</div>
+      <button class="btn btn-green" id="ms-connect-btn" onclick="connectMicrosoft()" style="font-size:11px; padding:12px;">[ CONNECT MICROSOFT ACCOUNT ]</button>
+      <button class="btn btn-back" id="ms-disconnect-btn" onclick="disconnectMicrosoft()" style="font-size:11px; padding:10px; display:none; margin-top:6px;">[ DISCONNECT ]</button>
     </div>
-    <button class="btn btn-green" onclick="saveSettings()" style="margin-top:8px;">[ SAVE ]</button>
+
+    <button class="btn btn-green" onclick="saveSettings()" style="margin-top:16px;">[ SAVE ]</button>
     <button class="btn btn-back" onclick="toggleSettings()" style="margin-top:8px;">[ CANCEL ]</button>
   </div>
 
@@ -623,6 +631,7 @@ function toggleSettings(){
   else{
     document.getElementById('settings-webhook').value=getWebhook();
     p.classList.add('active');
+    updateMsStatus();
   }
 }
 
@@ -878,26 +887,42 @@ async function transmitToSource(){
 
   document.getElementById('sent-filename').textContent=filename;
 
-  // Try webhook first, then Web Share, then clipboard
-  const webhookUrl=getWebhook();
+  // Try Graph API → webhook → Web Share → clipboard
   let sent=false;
 
-  if(webhookUrl){
-    try{
-      await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});
-      sent=true;
-    }catch(e){console.warn('Webhook failed, falling back to share:',e);}
+  // Option A: Graph API (best — direct to Team-Inbox)
+  try{
+    const token=await getMsToken();
+    if(token){
+      const graphResp=await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/root:/PKA-Business/Team-Inbox/${encodeURIComponent(filename)}:/content`,
+        {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:md}
+      );
+      if(graphResp.ok){sent=true;console.log('Graph API write success');}
+      else{console.warn('Graph API write failed:',graphResp.status);}
+    }
+  }catch(e){console.warn('Graph API error:',e);}
+
+  // Option B: Power Automate webhook
+  if(!sent){
+    const webhookUrl=getWebhook();
+    if(webhookUrl){
+      try{
+        await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});
+        sent=true;
+      }catch(e){console.warn('Webhook failed:',e);}
+    }
   }
 
+  // Option C: iOS Share Sheet
   if(!sent){
     try{
       const file=new File([md],filename,{type:'text/plain'});
       await navigator.share({title:'Signal '+ts,files:[file]});
       sent=true;
     }catch(e){
-      // Share failed or not supported — copy to clipboard
       try{await navigator.clipboard.writeText(md);}catch{}
-      alert('Brief copied to clipboard. Paste into Team-Inbox or save as '+filename);
+      alert('Brief copied. Paste into Team-Inbox as '+filename);
     }
   }
 
@@ -933,10 +958,90 @@ async function sendRaw(){
 }
 
 // ════════════════════════════════════════
+// MICROSOFT GRAPH / MSAL
+// ════════════════════════════════════════
+const MSAL_CONFIG={
+  auth:{
+    clientId:'10cb66fb-13a0-4999-a9fa-dbfa245d0247',
+    authority:'https://login.microsoftonline.com/c12a9d4f-9d34-44de-a16b-3ebae0474c37',
+    redirectUri:'https://lilburnpianostudio.github.io/uplink/',
+  },
+  cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}
+};
+const MS_SCOPES=['Files.ReadWrite','offline_access'];
+let msalApp=null;
+
+function getMsalApp(){
+  if(!msalApp && typeof msal!=='undefined'){
+    msalApp=new msal.PublicClientApplication(MSAL_CONFIG);
+  }
+  return msalApp;
+}
+
+async function getMsToken(){
+  const app=getMsalApp();
+  if(!app) return null;
+  const accounts=app.getAllAccounts();
+  if(!accounts.length) return null;
+  try{
+    const resp=await app.acquireTokenSilent({scopes:MS_SCOPES,account:accounts[0]});
+    return resp.accessToken;
+  }catch(e){
+    // Silent failed — token expired, need re-login
+    console.warn('Silent token failed, re-login needed');
+    return null;
+  }
+}
+
+async function connectMicrosoft(){
+  const app=getMsalApp();
+  if(!app){alert('MSAL not loaded. Check connection.');return;}
+  await app.loginRedirect({scopes:MS_SCOPES});
+}
+
+function disconnectMicrosoft(){
+  const app=getMsalApp();
+  if(!app) return;
+  const accounts=app.getAllAccounts();
+  if(accounts.length) app.logoutRedirect({account:accounts[0]});
+  updateMsStatus();
+}
+
+function updateMsStatus(){
+  const app=getMsalApp();
+  const statusEl=document.getElementById('ms-status');
+  const connectBtn=document.getElementById('ms-connect-btn');
+  const disconnectBtn=document.getElementById('ms-disconnect-btn');
+  if(!statusEl) return;
+  if(!app){statusEl.textContent='MSAL not available';return;}
+  const accounts=app.getAllAccounts();
+  if(accounts.length){
+    statusEl.textContent='● CONNECTED — '+accounts[0].username;
+    statusEl.style.color='#00FF41';
+    connectBtn.style.display='none';
+    disconnectBtn.style.display='block';
+  } else {
+    statusEl.textContent='○ NOT CONNECTED';
+    statusEl.style.color='#666600';
+    connectBtn.style.display='block';
+    disconnectBtn.style.display='none';
+  }
+}
+
+// ════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════
-window.addEventListener('load',()=>{
-  // ?reset=1 forces setup screen (e.g. to update API key)
+window.addEventListener('load', async ()=>{
+  // Handle MSAL redirect response first
+  const app=getMsalApp();
+  if(app){
+    try{
+      const resp=await app.handleRedirectPromise();
+      if(resp) console.log('MSAL login complete:',resp.account.username);
+    }catch(e){console.error('MSAL redirect error:',e);}
+  }
+
+  // ?reset=1 forces setup screen
   if(new URLSearchParams(window.location.search).get('reset')==='1'){
     localStorage.removeItem('uplink_setup_done');
     localStorage.removeItem('uplink_api_key');
