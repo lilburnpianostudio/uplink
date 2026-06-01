@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="UPLINK DEV">
+<title>UPLINK [DEV]</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: #000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    overflow-x: hidden;
+  }
+
+  /* ── Phone shell (desktop preview) ── */
+  .phone {
+    width: 375px;
+    max-width: 100%;
+    height: 780px;
+    background: #000;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 1.5px #004400, 0 0 30px rgba(0,255,65,0.3), 0 0 80px rgba(0,255,65,0.1), 0 40px 100px rgba(0,0,0,0.95);
+  }
+
+  /* On actual mobile, fill the screen */
+  @media (max-width: 420px) {
+    body { padding: 0; }
+    .phone { width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; }
+  }
+
+  #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+  /* ── Intro overlay ── */
+  #intro-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 100; display: none; flex-direction: column;
+    justify-content: flex-start; align-items: flex-start;
+    padding: 116px 24px 0;
+    background: rgba(0,0,0,0.0);
+    transition: opacity 1s ease;
+    cursor: none;
+  }
+  #intro-overlay.fading { opacity: 0; pointer-events: none; }
+  #intro-msg {
+    font-size: 15px; color: #00FF41; letter-spacing: 2px;
+    text-shadow: 0 0 14px #00FF41, 0 0 28px rgba(0,255,65,0.35);
+    min-height: 22px; line-height: 1.5;
+  }
+  #intro-msg .tw-cursor { color: #00FF41; animation: blink 0.7s step-end infinite; }
+
+  /* ── Header ── */
+  .sys-header {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 150;
+    background: rgba(0,0,0,0.9); border-bottom: 1px solid #003300;
+  }
+  .status-bar {
+    padding: 10px 22px 5px; display: flex; justify-content: space-between;
+    font-size: 10px; color: #00aa2a; letter-spacing: 1px;
+  }
+  .app-title-bar { padding: 8px 20px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .app-title-bar h1 { font-size: 24px; font-weight: 700; color: #ffaa00; letter-spacing: 6px; text-shadow: 0 0 14px #ffaa00, 0 0 28px rgba(255,170,0,0.4); }
+  .dev-banner { background: #332200; color: #ffaa00; font-size: 9px; letter-spacing: 3px; text-align: center; padding: 3px; border-bottom: 1px solid #554400; }
+  .app-title-bar p { font-size: 9px; color: #005500; letter-spacing: 3px; margin-top: 2px; }
+  .settings-btn { background: rgba(0,30,0,0.6); border: 1px solid #00aa2a; color: #00FF41; font-size: 13px; font-family: 'Courier New'; padding: 8px 14px; border-radius: 6px; cursor: pointer; letter-spacing: 1px; text-shadow: 0 0 6px #00FF41; }
+  .settings-btn:active { background: rgba(0,60,0,0.8); }
+
+  /* ── Screens ── */
+  .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; display: none; flex-direction: column; padding-top: 100px; }
+  .screen.active { display: flex; }
+
+  /* ══ SCREEN 0 — SETUP ══ */
+  #screen-setup {
+    background: rgba(0,0,0,0.92); padding: 100px 20px 20px;
+    justify-content: flex-start; gap: 0;
+  }
+  .setup-title { font-size: 11px; color: #00FF41; letter-spacing: 3px; margin-bottom: 20px; text-shadow: 0 0 8px #00FF41; }
+  .setup-title::before { content: '> '; }
+  .setup-field { margin-bottom: 18px; }
+  .setup-label { font-size: 9px; color: #006600; letter-spacing: 2px; margin-bottom: 6px; }
+  .setup-label::before { content: '> '; color: #00FF41; }
+  .setup-input {
+    width: 100%; background: rgba(0,10,0,0.8); border: 1px solid #004400;
+    border-radius: 6px; padding: 12px; font-size: 16px;
+    font-family: 'Courier New'; color: #00FF41; caret-color: #00FF41;
+    letter-spacing: 1px; touch-action: manipulation;
+  }
+  .setup-input:focus { outline: none; border-color: #00FF41; }
+  .setup-input::placeholder { color: #003300; }
+  .setup-note { font-size: 9px; color: #005500; letter-spacing: 1px; line-height: 1.6; margin-top: 4px; }
+  .setup-divider { border: none; border-top: 1px solid #002200; margin: 16px 0; }
+  .webhook-section { margin-bottom: 18px; }
+  .webhook-steps { font-size: 9px; color: #005500; line-height: 1.8; letter-spacing: 0.5px; }
+  .webhook-steps span { color: #009922; }
+
+  /* ══ SCREEN 1 — WRITE ══ */
+  #screen-write { padding: 100px 16px 14px; background: rgba(0,0,0,0.72); }
+  .terminal-label { font-size: 13px; color: #00cc33; letter-spacing: 2px; margin-bottom: 9px; }
+  .terminal-label::before { content: '> '; color: #00FF41; }
+  .input-wrap { position: relative; flex: 1; display: flex; flex-direction: column; }
+  textarea {
+    width: 100%; flex: 1; min-height: 200px; background: transparent;
+    border: none; padding: 12px 4px; font-size: 20px;
+    font-family: 'Courier New'; color: #00FF41; line-height: 1.65;
+    resize: none; caret-color: transparent; box-shadow: none; cursor: none;
+  }
+  textarea::placeholder { color: #003300; font-size: 18px; }
+  textarea:focus { outline: none; }
+  .blink-cursor {
+    position: absolute; top: 12px; left: 4px; font-size: 15px;
+    color: #00FF41; text-shadow: 0 0 8px #00FF41;
+    animation: blink 1s step-end infinite;
+    pointer-events: none; font-family: 'Courier New'; line-height: 1;
+  }
+  .blink-cursor.hidden { display: none; }
+  .mic-hint { font-size: 9px; color: #004a00; letter-spacing: 2px; margin: 6px 0 10px; text-align: center; }
+
+  /* Mouthpiece encode button */
+  .encode-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    cursor: pointer; background: none; border: none; padding: 6px 0 2px; width: 100%;
+    transition: transform 0.15s;
+  }
+  .encode-btn:active { transform: scale(0.93); }
+  .mouthpiece-wrap { filter: drop-shadow(0 0 10px #00FF41) drop-shadow(0 0 24px rgba(0,255,65,0.5)); animation: icon-pulse 2.6s ease-in-out infinite; }
+  .encode-label { font-size: 14px; color: #00FF41; letter-spacing: 4px; text-shadow: 0 0 8px #00FF41; font-weight: 700; }
+  .encode-sub { font-size: 11px; color: #006600; letter-spacing: 2px; }
+  .raw-signal-btn {
+    display: block; width: 100%; margin-top: 10px; padding: 12px;
+    background: transparent; border: 1px solid #004400;
+    color: #009922; font-size: 12px; font-family: 'Courier New';
+    letter-spacing: 3px; cursor: pointer; border-radius: 6px;
+    text-transform: uppercase; transition: all 0.15s;
+  }
+  .raw-signal-btn:active { color: #00FF41; border-color: #00FF41; }
+
+  /* Sender + Jack In section */
+  .action-bar {
+    padding: 10px 0 14px;
+  }
+  .sender-row {
+    display: flex; align-items: center; gap: 0; margin-bottom: 12px;
+  }
+  .sender-label { font-size: 11px; color: #006600; letter-spacing: 2px; margin-right: 10px; flex-shrink: 0; }
+  .sender-options { display: flex; align-items: center; gap: 14px; flex: 1; flex-wrap: wrap; }
+  .sender-option { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .sender-check {
+    width: 22px; height: 22px; border: 1px solid #004400; border-radius: 3px;
+    background: #000; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #00FF41; text-shadow: 0 0 5px #00FF41;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .sender-check.active { border-color: #00FF41; background: #001800; }
+  .sender-name { font-size: 15px; color: #00cc33; letter-spacing: 1px; font-weight: 700; }
+  .sender-freeform {
+    background: transparent; border: none; border-bottom: 1px solid #004400;
+    color: #00FF41; font-family: 'Courier New'; font-size: 15px; font-weight: 700;
+    letter-spacing: 1px; width: 80px; outline: none; caret-color: #00FF41;
+  }
+  .sender-freeform::placeholder { color: #004400; }
+  .jack-in-row {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .jack-in-btn {
+    flex: 1; padding: 16px; background: transparent; border: 1px solid #00FF41;
+    color: #00FF41; font-size: 16px; font-family: 'Courier New'; font-weight: 700;
+    letter-spacing: 4px; cursor: pointer; border-radius: 8px;
+    text-shadow: 0 0 8px #00FF41;
+    box-shadow: 0 0 14px rgba(0,255,65,0.28), inset 0 0 14px rgba(0,255,65,0.04);
+    transition: all 0.15s; text-transform: uppercase;
+  }
+  .jack-in-btn:active { transform: scale(0.97); background: rgba(0,255,65,0.07); }
+  .mouthpiece-small {
+    flex-shrink: 0; cursor: pointer; transition: transform 0.15s;
+    filter: drop-shadow(0 0 8px #00FF41);
+  }
+  .mouthpiece-small:active { transform: scale(0.9); }
+
+  /* ══ SCREEN 2 — PROCESSING ══ */
+  #screen-matrix-full { background: transparent; z-index: 15; padding-top: 0; justify-content: center; align-items: center; }
+  .matrix-takeover { text-align: center; padding: 20px; z-index: 20; position: relative; }
+  .signal-intercepted { font-size: 17px; font-weight: 700; color: #00FF41; letter-spacing: 4px; text-shadow: 0 0 18px #00FF41, 0 0 40px #00FF41; animation: glow-pulse 1.4s ease-in-out infinite; margin-bottom: 26px; }
+  #terminal-lines { text-align: left; display: inline-block; min-width: 260px; }
+  .t-line { font-size: 13px; color: #009922; letter-spacing: 1px; line-height: 2; opacity: 0; transition: opacity 0.3s; }
+  .t-line.visible { opacity: 1; }
+  .t-line.bright { color: #00FF41; text-shadow: 0 0 5px #00FF41; }
+  .blk-cursor { font-size: 18px; color: #00FF41; animation: blink 0.8s step-end infinite; margin-top: 14px; display: block; }
+  #claude-status { font-size: 10px; color: #00aa2a; letter-spacing: 2px; margin-top: 14px; opacity: 0; transition: opacity 0.4s; }
+  #claude-status.visible { opacity: 1; }
+
+  /* ══ SCREEN 3 — REVIEW ══ */
+  #screen-review { background: rgba(0,0,0,0.86); padding: 100px 0 0; overflow: hidden; }
+  .review-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 8px; scrollbar-width: none; }
+  .review-scroll::-webkit-scrollbar { display: none; }
+  .raw-block { border: 1px solid #001f00; border-radius: 6px; padding: 9px 12px; margin-bottom: 12px; background: rgba(0,5,0,0.5); }
+  .block-label { font-size: 16px; letter-spacing: 2px; color: #00cc33; margin-bottom: 10px; text-transform: uppercase; }
+  .raw-text { font-size: 15px; color: #009922; line-height: 1.6; font-style: italic; }
+  .agent-section { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; padding: 16px 14px; border: 1px solid #003a00; border-radius: 8px; background: rgba(0,12,0,0.72); box-shadow: 0 0 14px rgba(0,255,65,0.06); }
+  .hacker-icon { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; padding-top: 2px; }
+  .hacker-svg-wrap { filter: drop-shadow(0 0 7px #00FF41) drop-shadow(0 0 14px rgba(0,255,65,0.35)); }
+  .icon-label { font-size: 12px; color: #00FF41; letter-spacing: 2px; text-shadow: 0 0 6px #00FF41; font-weight: 700; }
+  .icon-status { font-size: 7px; color: #00aa2a; letter-spacing: 1px; animation: blink 2.2s step-end infinite; }
+  .agent-content { flex: 1; min-width: 0; }
+  .agent-content .block-label { color: #00FF41; font-size: 16px; letter-spacing: 2px; }
+  .brief-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #001800; transition: opacity 0.2s; }
+  .brief-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .brief-item.excluded { opacity: 0.3; }
+  .item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .matrix-check { flex-shrink: 0; width: 28px; height: 28px; border: 1px solid #00FF41; border-radius: 3px; background: #001800; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #00FF41; text-shadow: 0 0 6px #00FF41; transition: all 0.15s; }
+  .matrix-check.unchecked { border-color: #003300; color: transparent; background: #000; }
+  .agent-tag { display: inline-block; background: #001a00; color: #00FF41; font-size: 18px; font-weight: 700; letter-spacing: 2px; padding: 7px 16px; border-radius: 4px; border: 1px solid #004400; text-shadow: 0 0 5px #00FF41; }
+  .agent-tag.flag { color: #ffaa00; border-color: #554400; background: #150f00; text-shadow: 0 0 5px #ffaa00; }
+  .brief-lines { margin-top: 10px; }
+  .brief-line { display: flex; gap: 10px; font-size: 18px; line-height: 2; }
+  .line-key { color: #00aa2a; font-size: 18px; letter-spacing: 1px; flex-shrink: 0; padding-top: 1px; min-width: 78px; font-weight: 700; }
+  .line-val { color: #00FF41; font-size: 20px; flex: 1; line-height: 1.7; border-bottom: 1px dashed transparent; outline: none; min-width: 0; word-break: break-word; }
+  .line-val:focus { border-bottom-color: #004400; color: #00FF41; caret-color: #00FF41; }
+  .suggestions-block { border: 1px solid #002800; border-radius: 8px; padding: 14px; background: rgba(0,8,0,0.6); margin-bottom: 12px; }
+  .suggestions-block .block-label { color: #009922; margin-bottom: 10px; }
+  .suggestion-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #001500; cursor: pointer; }
+  .suggestion-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .suggestion-item:first-child { padding-top: 0; }
+  .sug-text { font-size: 20px; color: #00cc33; line-height: 1.6; flex: 1; }
+  .suggestion-item.checked .sug-text { color: #00FF41; }
+  .review-actions { padding: 8px 14px 14px; flex-shrink: 0; border-top: 1px solid #001800; background: rgba(0,0,0,0.6); }
+
+  /* ══ SCREEN 4 — SENT ══ */
+  #screen-sent { background: rgba(0,0,0,0.9); padding: 100px 20px 20px; justify-content: center; align-items: center; }
+  .sent-symbol { font-size: 52px; text-align: center; filter: drop-shadow(0 0 18px #00FF41); margin-bottom: 14px; animation: glow-pulse 2s ease-in-out infinite; }
+  .sent-title { font-size: 13px; font-weight: 700; color: #00FF41; letter-spacing: 5px; text-align: center; text-shadow: 0 0 14px #00FF41; margin-bottom: 3px; }
+  .sent-sub { font-size: 9px; color: #005500; letter-spacing: 4px; text-align: center; margin-bottom: 26px; }
+  .terminal-box { width: 100%; background: rgba(0,6,0,0.85); border: 1px solid #003300; border-radius: 8px; padding: 14px; margin-bottom: 22px; }
+  .t-row { font-size: 13px; color: #009922; line-height: 2; letter-spacing: 0.5px; }
+  .t-row span { color: #00FF41; }
+  .t-row.dim { color: #004400; }
+
+  /* ══ SETTINGS PANEL ══ */
+  #settings-panel {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 200; background: rgba(0,0,0,0.96);
+    display: none; flex-direction: column; padding: 100px 20px 20px;
+    overflow-y: auto;
+  }
+  #settings-panel.active { display: flex; }
+
+  /* ── Buttons ── */
+  .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; font-size: 12px; font-family: 'Courier New'; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: all 0.15s; text-transform: uppercase; display: block; }
+  .btn:active { transform: scale(0.97); }
+  .btn-transmit { background: transparent; color: #ff4400; border: 2px solid #ff4400; box-shadow: 0 0 18px rgba(255,68,0,0.45), inset 0 0 18px rgba(255,68,0,0.07); text-shadow: 0 0 10px #ff4400; font-size: 13px; padding: 17px; }
+  .btn-transmit:hover { background: rgba(255,68,0,0.08); }
+  .btn-back { background: transparent; color: #005500; border: 1px solid #003300; font-size: 10px; letter-spacing: 2px; margin-top: 8px; padding: 11px; }
+  .btn-back:hover { color: #009922; border-color: #005500; }
+  .btn-green { background: transparent; color: #00FF41; border: 1px solid #00FF41; box-shadow: 0 0 14px rgba(0,255,65,0.28); text-shadow: 0 0 7px #00FF41; font-size: 12px; }
+  .btn-green:hover { background: rgba(0,255,65,0.07); }
+
+  /* ── Animations ── */
+  @keyframes blink      { 0%,100%{opacity:1;} 50%{opacity:0;} }
+  @keyframes glow-pulse { 0%,100%{opacity:1;text-shadow:0 0 18px #00FF41,0 0 40px #00FF41;} 50%{opacity:0.6;text-shadow:0 0 8px #00FF41;} }
+  @keyframes icon-pulse { 0%,100%{filter:drop-shadow(0 0 10px #00FF41) drop-shadow(0 0 24px rgba(0,255,65,0.5));} 50%{filter:drop-shadow(0 0 20px #00FF41) drop-shadow(0 0 44px rgba(0,255,65,0.8));} }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <canvas id="matrix-canvas"></canvas>
+
+  <!-- Intro overlay -->
+  <div id="intro-overlay" onclick="skipIntro()">
+    <div id="intro-msg"></div>
+  </div>
+
+  <!-- DEV Banner -->
+  <div class="dev-banner">// DEV BUILD — NOT FOR PRODUCTION USE //</div>
+
+  <!-- Header -->
+  <div class="sys-header" id="sys-header">
+    <div class="status-bar">
+      <span>SYS:ONLINE</span>
+      <span id="sys-time">--:--</span>
+      <span>SECURE</span>
+    </div>
+    <div class="app-title-bar">
+      <div>
+        <h1>⬡ UPLINK</h1>
+        <p>// SECURE TERMINAL //</p>
+      </div>
+      <button class="settings-btn" onclick="event.stopPropagation();toggleSettings()">CONFIG</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 0: SETUP -->
+  <div id="screen-setup" class="screen">
+    <div class="setup-title">FIRST CONTACT PROTOCOL</div>
+
+    <div class="setup-field">
+      <div class="setup-label">AGENT KEY (ANTHROPIC API)</div>
+      <input type="password" class="setup-input" id="setup-api-key"
+        placeholder="sk-ant-api03-..." autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <div class="setup-note">stored only on this device · never transmitted elsewhere</div>
+    </div>
+
+    <hr class="setup-divider"/>
+
+    <div class="webhook-section">
+      <div class="setup-label">MOTHERSHIP URL (POWER AUTOMATE)</div>
+      <input type="text" class="setup-input" id="setup-webhook"
+        placeholder="https://prod-xx.westus.logic.azure.com/..." autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <div class="setup-note" style="margin-bottom:10px;">optional — enables one-tap file delivery to Team-Inbox</div>
+      <div class="webhook-steps">
+        to create: <span>flow.microsoft.com</span> → new flow →<br>
+        trigger: <span>when http request received</span> →<br>
+        action: <span>create file in SharePoint</span> →<br>
+        site: <span>lilburnpianostudio</span> · folder: <span>Team-Inbox</span><br>
+        paste the generated url above
+      </div>
+    </div>
+
+    <hr class="setup-divider"/>
+    <button class="btn btn-green" onclick="saveSetup()">[ INITIALIZE UPLINK ]</button>
+  </div>
+
+  <!-- SCREEN 1: WRITE -->
+  <div id="screen-write" class="screen">
+    <div class="terminal-label" style="padding:0 16px; margin-bottom:7px; margin-top:2px;">INPUT TRANSMISSION</div>
+    <div class="input-wrap" style="padding:0 16px;">
+      <textarea id="user-input" placeholder="[ BEGIN TRANSMISSION... ]"></textarea>
+      <span class="blink-cursor hidden" id="blink-cursor">_</span>
+    </div>
+    <div class="mic-hint">[ 🎙 TAP KEYBOARD MIC TO DICTATE ]</div>
+    <div style="padding:0 16px 14px;">
+      <div class="action-bar">
+
+        <!-- Sender row -->
+        <div class="sender-row">
+          <span class="sender-label">FROM:</span>
+          <div class="sender-options">
+            <div class="sender-option" onclick="selectSender('BEN')">
+              <div class="sender-check active" id="check-BEN">✓</div>
+              <span class="sender-name">BEN</span>
+            </div>
+            <div class="sender-option" onclick="selectSender('BREE')">
+              <div class="sender-check" id="check-BREE"></div>
+              <span class="sender-name">BREE</span>
+            </div>
+            <div class="sender-option" onclick="selectSender('OTHER')">
+              <div class="sender-check" id="check-OTHER"></div>
+              <input class="sender-freeform" id="sender-freeform" type="text"
+                placeholder="OTHER" maxlength="12"
+                onclick="event.stopPropagation();selectSender('OTHER')"
+                oninput="currentSender=this.value.toUpperCase()||'OTHER'"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jack In row -->
+        <div class="jack-in-row">
+          <button class="jack-in-btn" onclick="startEncoding()">[ JACK IN ]</button>
+          <div class="mouthpiece-small" onclick="startEncoding()">
+            <svg width="44" height="44" viewBox="0 0 72 72" fill="none">
+              <circle cx="36" cy="36" r="34" stroke="#00FF41" stroke-width="1.8" fill="#000"/>
+              <circle cx="36" cy="36" r="26" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.5"/>
+              <circle cx="36" cy="36" r="18" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.4"/>
+              <circle cx="36" cy="36" r="3.5" fill="#00FF41" opacity="0.9"/>
+              <circle cx="36" cy="4"    r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="53.6" cy="9.4" r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="65.6" cy="24"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="68"   cy="42"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="60.6" cy="58.6" r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="46"   cy="68"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="26"   cy="68"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="11.4" cy="58.6" r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="4"    cy="42"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="6.4"  cy="24"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="18.4" cy="9.4"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="36"   cy="12" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="52.4" cy="19.6" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="60"   cy="36"  r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="52.4" cy="52.4" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="36"   cy="60"  r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="19.6" cy="52.4" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="12"   cy="36"  r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="19.6" cy="19.6" r="2.2" fill="#00FF41" opacity="0.7"/>
+            </svg>
+          </div>
+        </div>
+
+        <button class="raw-signal-btn" onclick="sendRaw()" style="margin-top:8px;">[ RAW SIGNAL — BYPASS ]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: PROCESSING -->
+  <div id="screen-matrix-full" class="screen">
+    <div class="matrix-takeover">
+      <div class="signal-intercepted">SIGNAL INTERCEPTED</div>
+      <div id="terminal-lines">
+        <div class="t-line" id="tl1">&gt; ENCRYPTING PAYLOAD...</div>
+        <div class="t-line" id="tl2">&gt; ESTABLISHING SECURE LINK...</div>
+        <div class="t-line bright" id="tl3">&gt; AGENT: ONLINE</div>
+        <div class="t-line" id="tl4">&gt; DECODING INPUT...</div>
+        <div class="t-line" id="tl5">&gt; ROUTING INSTRUCTIONS...</div>
+        <div class="t-line" id="tl6">&gt; STRUCTURING BRIEF...</div>
+        <div class="t-line bright" id="tl7">&gt; TRANSMISSION READY.</div>
+      </div>
+      <div id="claude-status"></div>
+      <span class="blk-cursor">_</span>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: REVIEW -->
+  <div id="screen-review" class="screen">
+    <div class="review-scroll">
+      <div id="raw-display" style="display:none"></div>
+      <div class="agent-section">
+        <div class="hacker-icon">
+          <div class="hacker-svg-wrap">
+            <svg width="42" height="42" viewBox="0 0 72 72" fill="none">
+              <circle cx="36" cy="36" r="34" stroke="#00FF41" stroke-width="2" fill="#000"/>
+              <circle cx="36" cy="36" r="26" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.5"/>
+              <circle cx="36" cy="36" r="18" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.4"/>
+              <circle cx="36" cy="36" r="3.5" fill="#00FF41" opacity="0.9"/>
+              <circle cx="36" cy="4"    r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="53.6" cy="9.4" r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="65.6" cy="24"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="68"   cy="42"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="60.6" cy="58.6" r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="46"   cy="68"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="26"   cy="68"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="11.4" cy="58.6" r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="4"    cy="42"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="6.4"  cy="24"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="18.4" cy="9.4"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="36"   cy="12" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="52.4" cy="19.6" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="60"   cy="36"  r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="52.4" cy="52.4" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="36"   cy="60"  r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="19.6" cy="52.4" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="12"   cy="36"  r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="19.6" cy="19.6" r="2.2" fill="#00FF41" opacity="0.7"/>
+            </svg>
+          </div>
+          <div class="icon-label">AGENT</div>
+          <div class="icon-status">● LIVE</div>
+        </div>
+        <div class="agent-content">
+          <div class="block-label">&gt; DECODED_BRIEF.MD</div>
+          <div id="brief-items-container"></div>
+        </div>
+      </div>
+      <div class="suggestions-block">
+        <div class="block-label">&gt; SUGGESTED_TASKS.LOG</div>
+        <div id="suggestions-container"></div>
+      </div>
+    </div>
+    <div class="review-actions">
+      <button class="btn btn-transmit" onclick="transmitToSource()">[ TRANSMIT TO THE SOURCE ]</button>
+      <button class="btn btn-back" onclick="showScreen('screen-write')">&#8592; EDIT TRANSMISSION</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: SENT -->
+  <div id="screen-sent" class="screen">
+    <div class="sent-symbol">⬡</div>
+    <div class="sent-title">SIGNAL TRANSMITTED</div>
+    <div class="sent-sub">MESSAGE RECEIVED. STAND BY.</div>
+    <div class="terminal-box">
+      <div class="t-row">&gt; STATUS: <span>DELIVERED ✓</span></div>
+      <div class="t-row">&gt; METHOD: <span id="sent-delivery">--</span></div>
+      <div class="t-row">&gt; FILE: <span id="sent-filename">--</span></div>
+      <div class="t-row dim">&gt; SIGNAL ACKNOWLEDGED. AWAIT RESPONSE.</div>
+    </div>
+    <button class="btn btn-green" onclick="newTransmission()">[ NEW TRANSMISSION ]</button>
+  </div>
+
+  <!-- SETTINGS PANEL -->
+  <div id="settings-panel">
+    <div class="setup-title">SYSTEM CONFIGURATION</div>
+
+    <div class="setup-field">
+      <div class="setup-label">AGENT KEY</div>
+      <input type="password" class="setup-input" id="settings-api-key" placeholder="sk-ant-api03-..." autocomplete="off"/>
+      <div class="setup-note">leave blank to keep existing key</div>
+    </div>
+
+    <hr class="setup-divider"/>
+
+    <div class="setup-field">
+      <div class="setup-label">ONEDRIVE CONNECTION</div>
+      <div id="ms-status" class="setup-note" style="margin-bottom:10px;">checking...</div>
+      <button class="btn btn-green" id="ms-connect-btn" onclick="connectMicrosoft()" style="font-size:11px; padding:12px;">[ CONNECT MICROSOFT ACCOUNT ]</button>
+      <button class="btn btn-back" id="ms-disconnect-btn" onclick="disconnectMicrosoft()" style="font-size:11px; padding:10px; display:none; margin-top:6px;">[ DISCONNECT ]</button>
+    </div>
+
+    <button class="btn btn-green" onclick="saveSettings()" style="margin-top:16px;">[ SAVE ]</button>
+    <button class="btn btn-back" onclick="toggleSettings()" style="margin-top:8px;">[ CANCEL ]</button>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+// ════════════════════════════════════════
+// CLAUDE SYSTEM PROMPT
+// ════════════════════════════════════════
+const SYSTEM_PROMPT = `You are a message decoder for Lilburn Piano Studio. Ben (studio owner) gives you raw voice notes or typed thoughts. You organize them into a clean, actionable brief for his AI team.
+
+THE TEAM:
+- VERA: students, leads, scheduling, lesson plans, studio ops, website, marketing operations
+- FORTE: marketing copy, social posts, campaigns — drafts only, never publishes
+- CANVAS: design, graphics, flyers — assets only
+- ATLAS: YouTube content pipeline tracking
+- QUILL: YouTube script writing
+
+CURRENT CONTEXT: use details provided in the user's message. If names, leads, or students are mentioned, treat them as real studio records. Prioritize business operations over content creation.
+
+OUTPUT FORMAT — return ONLY a valid JSON array, no other text:
+[
+  {
+    "agent": "VERA",
+    "flag": false,
+    "target": "short subject",
+    "action": "what to do — concise",
+    "status": "current state or context",
+    "next": "immediate next step"
+  }
+]
+
+RULES:
+- Max 5 items. Combine related items.
+- flag:true means Ben must decide before action.
+- Be specific — use real names and details.
+- If no clear target, use category: "Website", "Marketing", "Punch List", etc.
+- Return ONLY the JSON array. No markdown fences. No explanation.`;
+
+// ════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('sys-time').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ════════════════════════════════════════
+// MATRIX RAIN (scripture refs + sacred numbers)
+// ════════════════════════════════════════
+const canvas = document.getElementById('matrix-canvas');
+const ctx = canvas.getContext('2d');
+const MATRIX_CHARS = 'ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&*<>[]|';
+const SACRED_NUMS  = ['888','777','153','726','74','626','262','216','923','924','911'];
+const SCRIPTURE_CODES = ['JN3','PS23','ROM8','GAL5','COL3','HEB11','EPH2','PHP4','REV3','ISA40','MT11','PRV3'];
+const COL_W = 14;
+let drops = [], colSpecial = [], currentScreen = 'write';
+
+function initCanvas() {
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  const cols = Math.floor(canvas.width / COL_W);
+  drops     = Array.from({length:cols}, () => Math.floor(Math.random()*-80));
+  colSpecial = Array.from({length:cols}, () => Math.random() < 0.12);
+}
+function randChar() { return MATRIX_CHARS[Math.floor(Math.random()*MATRIX_CHARS.length)]; }
+function drawMatrix() {
+  const full = currentScreen === 'matrix-full';
+  ctx.fillStyle = full ? 'rgba(0,0,0,0.055)' : 'rgba(0,0,0,0.04)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  for (let i=0;i<drops.length;i++) {
+    const x=i*COL_W, y=drops[i]*COL_W;
+    if (y<0){drops[i]++;continue;}
+    const sp=colSpecial[i];
+    const useNum=sp&&Math.random()<0.15, useSc=sp&&!useNum&&Math.random()<0.18;
+    let hc,hcol,hf;
+    if (useNum){hc=SACRED_NUMS[Math.floor(Math.random()*SACRED_NUMS.length)];hcol=full?'#aaffaa':'#00cc44';hf=`bold ${full?8:7}px Courier New`;}
+    else if(useSc){hc=SCRIPTURE_CODES[Math.floor(Math.random()*SCRIPTURE_CODES.length)];hcol=full?'#ccffcc':'#00dd44';hf=`bold ${full?9:8}px Courier New`;}
+    else{hc=randChar();hcol=full?'#aaffaa':'#009922';hf=`bold 13px Courier New`;}
+    ctx.fillStyle=hcol;ctx.font=hf;ctx.fillText(hc,x,y);
+    const colors=full?['#00FF41','#00cc33','#009922','#006611','#003308']:['#006600','#004a00','#003300','#002200','#001500'];
+    colors.forEach((c,ti)=>{const ty=y-(ti+1)*COL_W;if(ty>0){ctx.fillStyle=c;ctx.font=`${full?13-ti:12-ti}px Courier New`;ctx.fillText(randChar(),x,ty);}});
+    if(y>canvas.height&&Math.random()>0.975){drops[i]=Math.floor(Math.random()*-40);colSpecial[i]=Math.random()<0.12;}
+    drops[i]++;
+  }
+}
+initCanvas();
+setInterval(drawMatrix,45);
+
+// ════════════════════════════════════════
+// INTRO SEQUENCE
+// ════════════════════════════════════════
+const TRINITY_MSGS = [
+  "the Trinity has you.","you are held by the Trinity.",
+  "the Trinity intercedes for you.","you are hidden in the Trinity.",
+  "the Trinity goes before you.","the Trinity never sleeps.",
+  "rest in the Trinity.","the Trinity is your dwelling.",
+  "the Trinity holds all things together.","you cannot fall from the Trinity.",
+  "the Trinity is faithful.","union with the Trinity is your portion.",
+];
+function getWeeklyMsg(){const w=Math.floor(Date.now()/(7*24*60*60*1000));return TRINITY_MSGS[w%TRINITY_MSGS.length];}
+
+let introActive=false;
+function introSleep(ms){
+  return new Promise(res=>{
+    const start=Date.now();
+    const tick=()=>{if(!introActive||Date.now()-start>=ms)res();else setTimeout(tick,50);};
+    setTimeout(tick,50);
+  });
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+async function typeWrite(el,text,speed){
+  for(let i=0;i<=text.length;i++){
+    if(!introActive)return;
+    el.innerHTML=escHtml(text.slice(0,i))+'<span class="tw-cursor">_</span>';
+    await new Promise(r=>setTimeout(r,speed));
+  }
+}
+function endIntro(){
+  document.getElementById('intro-overlay').style.display='none';
+  const cur=document.getElementById('blink-cursor');
+  cur.classList.remove('hidden');
+  document.getElementById('user-input').focus();
+}
+function skipIntro(){
+  if(!introActive)return;
+  introActive=false;
+  document.getElementById('intro-msg').textContent='';
+  endIntro();
+}
+async function runIntroSequence(){
+  introActive=true;
+  const overlay=document.getElementById('intro-overlay');
+  const msgEl=document.getElementById('intro-msg');
+  overlay.style.display='flex';overlay.style.opacity='1';overlay.classList.remove('fading');
+  msgEl.innerHTML='';
+  const sequence=[
+    {text:"Wake up...",               speed:130},
+    {text:getWeeklyMsg().replace(/\.?$/,'...'), speed:115},
+    {text:"Follow Jesus...",         speed:130},
+    {text:"Knock, knock...",         speed:130, final:true},
+  ];
+  for(let i=0;i<sequence.length;i++){
+    if(!introActive)return;
+    const s=sequence[i];
+    await introSleep(400);
+    if(!introActive)return;
+    await typeWrite(msgEl,s.text,s.speed);
+    if(!introActive)return;
+    msgEl.textContent=s.text;
+    await introSleep(3000);
+    if(!introActive)return;
+    msgEl.textContent='';
+    if(!s.final)await introSleep(500);
+  }
+  introActive=false;
+  overlay.classList.add('fading');
+  await new Promise(r=>setTimeout(r,1000));
+  endIntro();
+}
+
+// ════════════════════════════════════════
+// SETUP & SETTINGS
+// ════════════════════════════════════════
+function getApiKey(){return localStorage.getItem('uplink_api_key')||'';}
+function getWebhook(){return localStorage.getItem('uplink_webhook_url')||'';}
+
+function saveSetup(){
+  const k=document.getElementById('setup-api-key').value.trim();
+  const w=document.getElementById('setup-webhook').value.trim();
+  if(!k){alert('Agent key is required.');return;}
+  localStorage.setItem('uplink_api_key',k);
+  if(w)localStorage.setItem('uplink_webhook_url',w);
+  localStorage.setItem('uplink_setup_done','1');
+  // Clean URL so ?reset=1 doesn't re-trigger on refresh
+  history.replaceState({},'',window.location.pathname);
+  showScreen('screen-write');
+  runIntroSequence();
+}
+function saveSettings(){
+  const k=document.getElementById('settings-api-key').value.trim();
+  const w=document.getElementById('settings-webhook').value.trim();
+  if(k)localStorage.setItem('uplink_api_key',k);
+  if(w)localStorage.setItem('uplink_webhook_url',w);
+  toggleSettings();
+}
+function toggleSettings(){
+  try{
+    const p=document.getElementById('settings-panel');
+    if(!p){alert('ERROR: settings panel not found');return;}
+    const isOpen=p.classList.contains('active');
+    if(isOpen){
+      p.classList.remove('active');
+    } else {
+      try{document.getElementById('settings-webhook').value=getWebhook();}catch(e){}
+      p.classList.add('active');
+      try{updateMsStatus();}catch(e){}
+    }
+  }catch(e){alert('CONFIG error: '+e.message);}
+}
+
+// ════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ════════════════════════════════════════
+function showScreen(id){
+  // Kill intro whenever we leave the write screen
+  if(id !== 'screen-write') skipIntro();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  currentScreen=id.replace('screen-','');
+  document.getElementById('sys-header').style.display=(id==='screen-matrix-full')?'none':'';
+  if(id==='screen-write') document.getElementById('user-input').focus();
+}
+
+// ════════════════════════════════════════
+// SENDER SELECTOR
+// ════════════════════════════════════════
+let currentSender = 'BEN';
+
+function selectSender(name) {
+  currentSender = name;
+  ['BEN','BREE'].forEach(n => {
+    const el = document.getElementById('check-' + n);
+    if (n === name) {
+      el.classList.add('active');
+      el.textContent = '✓';
+    } else {
+      el.classList.remove('active');
+      el.textContent = '';
+    }
+  });
+}
+
+// ════════════════════════════════════════
+// TEXTAREA CURSOR
+// ════════════════════════════════════════
+const ta=document.getElementById('user-input');
+const cur=document.getElementById('blink-cursor');
+ta.addEventListener('focus',()=>{skipIntro();cur.classList.remove('hidden');});
+ta.addEventListener('blur',()=>{if(ta.value.length>0)cur.classList.add('hidden');});
+ta.addEventListener('input',()=>{cur.classList.toggle('hidden',ta.value.length>0);});
+
+// ════════════════════════════════════════
+// CLAUDE API CALL
+// ════════════════════════════════════════
+async function callClaude(input){
+  const apiKey=getApiKey();
+  if(!apiKey) throw new Error('KEY_MISSING: No API key. Tap CONFIG to add one.');
+
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'content-type':'application/json',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1024,
+        system:SYSTEM_PROMPT,
+        messages:[{role:'user',content:input}]
+      })
+    });
+  } catch(e) {
+    throw new Error('NETWORK: Cannot reach Anthropic. Check internet connection.');
+  }
+
+  if(!resp.ok){
+    const e=await resp.json().catch(()=>({}));
+    const msg=e.error?.message||'HTTP '+resp.status;
+    if(resp.status===401) throw new Error('KEY_INVALID: API key rejected. Tap CONFIG → enter a new key from console.anthropic.com');
+    if(resp.status===429) throw new Error('RATE_LIMIT: Too many requests. Wait 30 seconds and try again.');
+    throw new Error('API_ERROR: '+msg);
+  }
+
+  const data=await resp.json();
+  const text=data.content?.[0]?.text;
+  if(!text) throw new Error('EMPTY: Claude returned no content. Try again.');
+  return text;
+}
+
+// ════════════════════════════════════════
+// PARSE CLAUDE RESPONSE
+// ════════════════════════════════════════
+function parseClaudeResponse(result){
+  // Strategy 1: pure JSON array
+  try{
+    const p=JSON.parse(result.trim());
+    if(Array.isArray(p)&&p.length>0) return p;
+  }catch{}
+
+  // Strategy 2: JSON array embedded in text
+  try{
+    const match=result.match(/\[[\s\S]*?\]/);
+    if(match){
+      const p=JSON.parse(match[0]);
+      if(Array.isArray(p)&&p.length>0) return p;
+    }
+  }catch{}
+
+  // Strategy 3: Claude returned plain text — wrap it as a raw note
+  if(result.trim().length>0){
+    return [{
+      agent:'VERA',flag:false,
+      target:'Raw Note',
+      action:result.trim().substring(0,300),
+      status:'Formatted as plain text — not JSON',
+      next:'Review and route manually'
+    }];
+  }
+
+  return null; // complete failure
+}
+
+// ════════════════════════════════════════
+// BRIEF RENDERING
+// ════════════════════════════════════════
+let parsedItems=[];
+
+function renderBrief(items){
+  parsedItems=items;
+  const container=document.getElementById('brief-items-container');
+  container.innerHTML='';
+  items.forEach((item,idx)=>{
+    const isFlag=item.flag===true||item.agent.includes('FLAG');
+    const agentDisplay=isFlag?`${item.agent} &middot; FLAG`:item.agent;
+    const div=document.createElement('div');
+    div.className='brief-item';
+    div.id='item-'+idx;
+    div.innerHTML=`
+      <div class="item-header">
+        <div class="matrix-check unchecked" onclick="toggleCheck(${idx})"></div>
+        <div class="agent-tag${isFlag?' flag':''}">&rarr; ${agentDisplay}</div>
+      </div>
+      <div class="brief-lines">
+        <div class="brief-line"><span class="line-key">TARGET:</span><span class="line-val" contenteditable="true">${escHtml(item.target||'')}</span></div>
+        <div class="brief-line"><span class="line-key">ACTION:</span><span class="line-val" contenteditable="true">${escHtml(item.action||'')}</span></div>
+        <div class="brief-line"><span class="line-key">STATUS:</span><span class="line-val" contenteditable="true">${escHtml(item.status||'')}</span></div>
+        <div class="brief-line"><span class="line-key">NEXT:</span><span class="line-val" contenteditable="true">${escHtml(item.next||'')}</span></div>
+      </div>`;
+    container.appendChild(div);
+  });
+
+  // Default suggestions
+  const sugs=[
+    {text:'Check intake form responses — any new leads?', checked:false},
+    {text:'Review punch list for stalled items', checked:false},
+    {text:'Review open leads — any follow-ups needed?', checked:false},
+  ];
+  const sc=document.getElementById('suggestions-container');
+  sc.innerHTML='';
+  sugs.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='suggestion-item'+(s.checked?' checked':'');
+    d.onclick=()=>toggleSuggestion(d);
+    d.innerHTML=`<div class="matrix-check${s.checked?'':' unchecked'}">${s.checked?'✓':''}</div><div class="sug-text">${s.text}</div>`;
+    sc.appendChild(d);
+  });
+}
+
+function toggleCheck(idx){
+  const item=document.getElementById('item-'+idx);
+  const chk=item.querySelector('.matrix-check');
+  const checked=!chk.classList.contains('unchecked');
+  if(checked){chk.classList.add('unchecked');chk.textContent='';item.classList.add('excluded');}
+  else{chk.classList.remove('unchecked');chk.textContent='✓';item.classList.remove('excluded');}
+}
+function toggleSuggestion(el){
+  const chk=el.querySelector('.matrix-check');
+  if(el.classList.contains('checked')){el.classList.remove('checked');chk.classList.add('unchecked');chk.textContent='';}
+  else{el.classList.add('checked');chk.classList.remove('unchecked');chk.textContent='✓';}
+}
+
+// ════════════════════════════════════════
+// ENCODING FLOW
+// ════════════════════════════════════════
+const termLines=['tl1','tl2','tl3','tl4','tl5','tl6','tl7'];
+let termTimeouts=[];
+
+async function startEncoding(){
+  const raw=ta.value.trim();
+  if(!raw){ta.focus();return;}
+  if(!getApiKey()){showScreen('screen-setup');return;}
+
+  document.getElementById('raw-display').textContent=raw;
+  termTimeouts.forEach(t=>clearTimeout(t));
+  termTimeouts=[];
+  termLines.forEach(id=>document.getElementById(id).classList.remove('visible'));
+  document.getElementById('claude-status').className='';
+  document.getElementById('claude-status').textContent='';
+
+  showScreen('screen-matrix-full');
+
+  // Fire terminal lines
+  [300,750,1250,1750,2250,2750,3200].forEach((d,i)=>{
+    const t=setTimeout(()=>document.getElementById(termLines[i]).classList.add('visible'),d);
+    termTimeouts.push(t);
+  });
+
+  // Call Claude
+  let briefItems=[];
+  const statusEl=document.getElementById('claude-status');
+  try{
+    setTimeout(()=>{statusEl.textContent='> AGENT ONLINE — DECODING...';statusEl.className='visible';},1600);
+    const result=await callClaude(raw);
+    statusEl.textContent='> PARSING BRIEF...';
+    const parsed=parseClaudeResponse(result);
+    if(!parsed){
+      throw new Error('PARSE_FAIL: Could not read Claude response. Try again.');
+    }
+    briefItems=parsed;
+    statusEl.textContent='> BRIEF DECODED. ✓';
+    await new Promise(r=>setTimeout(r,700));
+  }catch(err){
+    console.error('Claude error:',err);
+    const errCode=err.message.split(':')[0];
+    const errDetail=err.message.includes(':')?err.message.split(':').slice(1).join(':').trim():err.message;
+    // Clear, actionable error brief
+    briefItems=[{
+      agent:'VERA',
+      flag:true,
+      target:'⚠ CONNECTION ERROR',
+      action:errDetail,
+      status:errCode,
+      next: errCode==='KEY_INVALID'||errCode==='KEY_MISSING'
+        ? 'Tap CONFIG in the header to update your API key'
+        : 'Check your connection and try again, or tap RAW SIGNAL to bypass Claude'
+    }];
+    statusEl.textContent='> ERROR — SEE BRIEF';
+    await new Promise(r=>setTimeout(r,700));
+  }
+
+  renderBrief(briefItems);
+  showScreen('screen-review');
+}
+
+// ════════════════════════════════════════
+// TRANSMIT TO THE SOURCE
+// ════════════════════════════════════════
+async function transmitToSource(){
+  const now=new Date();
+  const ts=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
+  const filename=`signal-${currentSender}-${ts}.md`;
+
+  // Collect checked brief items
+  const items=[];
+  document.querySelectorAll('.brief-item:not(.excluded)').forEach((el,idx)=>{
+    const vals=el.querySelectorAll('.line-val');
+    const agentTag=el.querySelector('.agent-tag').textContent.replace('→','').trim();
+    items.push({agent:agentTag,target:vals[0]?.textContent,action:vals[1]?.textContent,status:vals[2]?.textContent,next:vals[3]?.textContent});
+  });
+
+  // Collect checked suggestions
+  const sugs=[];
+  document.querySelectorAll('.suggestion-item.checked .sug-text').forEach(el=>sugs.push('- [x] '+el.textContent));
+  document.querySelectorAll('.suggestion-item:not(.checked) .sug-text').forEach(el=>sugs.push('- [ ] '+el.textContent));
+
+  // Build markdown file
+  const rawText=document.getElementById('raw-display').textContent;
+  let md=`# Signal — ${ts.replace(/-(\d{4})$/,' $1').replace(/-/g,'-')}\n_Source: UPLINK / ${currentSender}_\n\n---\n\n## Decoded Brief\n\n`;
+  items.forEach(item=>{
+    md+=`**${item.agent}**\n`;
+    md+=`TARGET: ${item.target}\nACTION: ${item.action}\nSTATUS: ${item.status}\nNEXT: ${item.next}\n\n`;
+  });
+  if(sugs.length){md+=`---\n\n## Suggested Tasks\n\n${sugs.join('\n')}\n\n`;}
+  md+=`---\n\n## Raw Transmission\n\n${rawText}\n`;
+
+  document.getElementById('sent-filename').textContent=filename;
+
+  // Try Graph API → webhook → Web Share → clipboard
+  let sent=false, deliveryMethod='UNKNOWN';
+
+  // Option A: Graph API (best — direct to Team-Inbox)
+  try{
+    const token=await getMsToken();
+    if(token){
+      const graphResp=await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/root:/PKA-Business/Team-Inbox/${encodeURIComponent(filename)}:/content`,
+        {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:md}
+      );
+      if(graphResp.ok){
+        sent=true;
+        deliveryMethod='ONEDRIVE DIRECT ✓';
+      } else {
+        const errBody=await graphResp.json().catch(()=>({}));
+        deliveryMethod='GRAPH FAILED: '+graphResp.status+' — '+(errBody.error?.message||'unknown');
+        console.warn('Graph API failed:',graphResp.status, errBody);
+      }
+    }
+  }catch(e){
+    deliveryMethod='GRAPH ERROR: '+e.message;
+    console.warn('Graph API error:',e);
+  }
+
+  // Option B: Power Automate webhook
+  if(!sent){
+    const webhookUrl=getWebhook();
+    if(webhookUrl){
+      try{
+        await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});
+        sent=true; deliveryMethod='WEBHOOK ✓';
+      }catch(e){console.warn('Webhook failed:',e);}
+    }
+  }
+
+  // Option C: iOS Share Sheet
+  if(!sent){
+    try{
+      const file=new File([md],filename,{type:'text/plain'});
+      await navigator.share({title:'Signal '+ts,files:[file]});
+      sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
+    }catch(e){
+      try{await navigator.clipboard.writeText(md);}catch{}
+      deliveryMethod='CLIPBOARD — paste manually';
+      alert('Brief copied. Paste into Team-Inbox as '+filename);
+    }
+  }
+
+  document.getElementById('sent-delivery').textContent=deliveryMethod;
+  showScreen('screen-sent');
+}
+
+function newTransmission(){
+  ta.value='';
+  cur.classList.remove('hidden');
+  showScreen('screen-write');
+}
+
+async function sendRaw(){
+  const raw=ta.value.trim();
+  if(!raw){ta.focus();return;}
+  const now=new Date();
+  const ts=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
+  const filename=`signal-raw-${currentSender}-${ts}.md`;
+  const md=`# Raw Signal — ${ts}\n_Source: UPLINK / ${currentSender} — unprocessed_\n\n---\n\n${raw}\n`;
+  document.getElementById('sent-filename').textContent=filename;
+  const webhookUrl=getWebhook();
+  if(webhookUrl){
+    try{await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});}
+    catch(e){}
+  }
+  try{
+    const file=new File([md],filename,{type:'text/plain'});
+    await navigator.share({title:'Raw Signal '+ts,files:[file]});
+  }catch(e){
+    try{await navigator.clipboard.writeText(md);}catch{}
+  }
+  showScreen('screen-sent');
+}
+
+// ════════════════════════════════════════
+// MICROSOFT OAUTH — PKCE (no external library)
+// ════════════════════════════════════════
+const MS_CLIENT_ID='10cb66fb-13a0-4999-a9fa-dbfa245d0247';
+const MS_TENANT_ID='c12a9d4f-9d34-44de-a16b-3ebae0474c37';
+const MS_REDIRECT='https://lilburnpianostudio.github.io/uplink/';
+const MS_SCOPE='Files.ReadWrite offline_access';
+
+function b64url(buf){
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function pkce_sha256(str){
+  return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+}
+function randStr(){ return b64url(crypto.getRandomValues(new Uint8Array(32))); }
+
+async function connectMicrosoft(){
+  const verifier=randStr(), state=randStr();
+  const challenge=b64url(await pkce_sha256(verifier));
+  localStorage.setItem('ms_v',verifier);
+  localStorage.setItem('ms_s',state);
+  const p=new URLSearchParams({
+    client_id:MS_CLIENT_ID,response_type:'code',
+    redirect_uri:MS_REDIRECT,scope:MS_SCOPE,
+    code_challenge:challenge,code_challenge_method:'S256',
+    state,prompt:'select_account'
+  });
+  window.location='https://login.microsoftonline.com/'+MS_TENANT_ID+'/oauth2/v2.0/authorize?'+p;
+}
+
+async function handleMsCallback(){
+  const p=new URLSearchParams(window.location.search);
+  const code=p.get('code'),state=p.get('state');
+  if(!code||state!==localStorage.getItem('ms_s')) return false;
+  const body=new URLSearchParams({
+    client_id:MS_CLIENT_ID,grant_type:'authorization_code',
+    code,redirect_uri:MS_REDIRECT,
+    code_verifier:localStorage.getItem('ms_v')
+  });
+  try{
+    const resp=await fetch('https://login.microsoftonline.com/'+MS_TENANT_ID+'/oauth2/v2.0/token',
+      {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const data=await resp.json();
+    if(data.access_token){
+      localStorage.setItem('ms_at',data.access_token);
+      localStorage.setItem('ms_rt',data.refresh_token||'');
+      localStorage.setItem('ms_exp',Date.now()+(data.expires_in*1000));
+      try{
+        const pl=JSON.parse(atob(data.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+        localStorage.setItem('ms_user',pl.preferred_username||pl.email||'connected');
+      }catch{}
+      localStorage.removeItem('ms_v');localStorage.removeItem('ms_s');
+      return true;
+    }
+  }catch(e){console.error('Token exchange error:',e);}
+  return false;
+}
+
+async function getMsToken(){
+  const token=localStorage.getItem('ms_at');
+  const expiry=parseInt(localStorage.getItem('ms_exp')||'0');
+  const refresh=localStorage.getItem('ms_rt');
+  if(!token) return null;
+  if(Date.now()<expiry-60000) return token;
+  if(!refresh) return null;
+  try{
+    const body=new URLSearchParams({
+      client_id:MS_CLIENT_ID,grant_type:'refresh_token',
+      refresh_token:refresh,scope:MS_SCOPE
+    });
+    const resp=await fetch('https://login.microsoftonline.com/'+MS_TENANT_ID+'/oauth2/v2.0/token',
+      {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const data=await resp.json();
+    if(data.access_token){
+      localStorage.setItem('ms_at',data.access_token);
+      localStorage.setItem('ms_exp',Date.now()+(data.expires_in*1000));
+      if(data.refresh_token) localStorage.setItem('ms_rt',data.refresh_token);
+      return data.access_token;
+    }
+  }catch(e){console.warn('Refresh failed:',e);}
+  return null;
+}
+
+function disconnectMicrosoft(){
+  ['ms_at','ms_rt','ms_exp','ms_user','ms_v','ms_s'].forEach(k=>localStorage.removeItem(k));
+  updateMsStatus();
+}
+
+function updateMsStatus(){
+  const statusEl=document.getElementById('ms-status');
+  const connectBtn=document.getElementById('ms-connect-btn');
+  const disconnectBtn=document.getElementById('ms-disconnect-btn');
+  if(!statusEl) return;
+  const user=localStorage.getItem('ms_user');
+  if(user){
+    statusEl.textContent='● CONNECTED — '+user;
+    statusEl.style.color='#00FF41';
+    if(connectBtn) connectBtn.style.display='none';
+    if(disconnectBtn) disconnectBtn.style.display='block';
+  } else {
+    statusEl.textContent='○ NOT CONNECTED';
+    statusEl.style.color='#666600';
+    if(connectBtn) connectBtn.style.display='block';
+    if(disconnectBtn) disconnectBtn.style.display='none';
+  }
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+window.addEventListener('load', async ()=>{
+  // Handle Microsoft OAuth callback
+  if(window.location.search.includes('code=')){
+    const ok=await handleMsCallback();
+    if(ok) console.log('Microsoft connected:',localStorage.getItem('ms_user'));
+    history.replaceState({},'',window.location.pathname);
+  }
+
+  // ?reset=1 forces setup screen
+  if(new URLSearchParams(window.location.search).get('reset')==='1'){
+    localStorage.removeItem('uplink_setup_done');
+    localStorage.removeItem('uplink_api_key');
+  }
+  if(!localStorage.getItem('uplink_setup_done')){
+    showScreen('screen-setup');
+  } else {
+    showScreen('screen-write');
+    runIntroSequence();
+  }
+});
+</script>
+</body>
+</html>
