@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <!--
+    UPLINK Icon — Lilburn Piano Studio
+    Mouthpiece symbol encoding Strong's G726 (Harpazo — "caught up")
+    Outer ring: 7 dots  = divine completion (7 days, 7 churches, 7 seals)
+    Middle ring: 2 dots = testimony & witness (Deut 19:15, Rev 11)
+    Inner ring: 6 dots  = humanity & creation (hexagon, day 6)
+    Center: the One
+  -->
+
+  <!-- Background -->
+  <rect width="180" height="180" rx="40" fill="#000"/>
+
+  <!-- Subtle matrix rain columns -->
+  <line x1="22" y1="0" x2="22" y2="180" stroke="#003300" stroke-width="0.5" opacity="0.35"/>
+  <line x1="48" y1="0" x2="48" y2="180" stroke="#003300" stroke-width="0.5" opacity="0.35"/>
+  <line x1="74" y1="0" x2="74" y2="180" stroke="#003300" stroke-width="0.5" opacity="0.25"/>
+  <line x1="106" y1="0" x2="106" y2="180" stroke="#003300" stroke-width="0.5" opacity="0.25"/>
+  <line x1="132" y1="0" x2="132" y2="180" stroke="#003300" stroke-width="0.5" opacity="0.35"/>
+  <line x1="158" y1="0" x2="158" y2="180" stroke="#003300" stroke-width="0.5" opacity="0.35"/>
+
+  <!-- Outer glow aura -->
+  <circle cx="90" cy="90" r="74" fill="none" stroke="#00FF41" stroke-width="0.4" opacity="0.15"/>
+
+  <!-- Main outer ring -->
+  <circle cx="90" cy="90" r="66" stroke="#00FF41" stroke-width="2.2" fill="#000"/>
+
+  <!-- Middle ring -->
+  <circle cx="90" cy="90" r="50" stroke="#00FF41" stroke-width="1.1" fill="none" opacity="0.55"/>
+
+  <!-- Inner ring -->
+  <circle cx="90" cy="90" r="34" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.45"/>
+
+  <!-- Center — The One -->
+  <circle cx="90" cy="90" r="6"   fill="#00FF41" opacity="0.9"/>
+  <circle cx="90" cy="90" r="3.5" fill="#000"/>
+  <circle cx="90" cy="90" r="2"   fill="#00FF41" opacity="0.7"/>
+
+  <!-- OUTER RING — 7 dots (divine completion) — evenly spaced 360/7 ≈ 51.43° -->
+  <!-- r=64, starting top, clockwise -->
+  <circle cx="90"   cy="26"  r="5.5" fill="#00FF41" opacity="0.92"/>
+  <circle cx="140"  cy="50"  r="5.5" fill="#00FF41" opacity="0.92"/>
+  <circle cx="152"  cy="104" r="5.5" fill="#00FF41" opacity="0.92"/>
+  <circle cx="118"  cy="148" r="5.5" fill="#00FF41" opacity="0.92"/>
+  <circle cx="62"   cy="148" r="5.5" fill="#00FF41" opacity="0.92"/>
+  <circle cx="28"   cy="104" r="5.5" fill="#00FF41" opacity="0.92"/>
+  <circle cx="40"   cy="50"  r="5.5" fill="#00FF41" opacity="0.92"/>
+
+  <!-- MIDDLE RING — 2 dots (two witnesses, testimony) — top and bottom -->
+  <!-- r=48 -->
+  <circle cx="90" cy="42"  r="4" fill="#00FF41" opacity="0.78"/>
+  <circle cx="90" cy="138" r="4" fill="#00FF41" opacity="0.78"/>
+
+  <!-- INNER RING — 6 dots (humanity, creation, hexagon) — every 60° -->
+  <!-- r=32 -->
+  <circle cx="90"  cy="58"  r="3.2" fill="#00FF41" opacity="0.65"/>
+  <circle cx="118" cy="74"  r="3.2" fill="#00FF41" opacity="0.65"/>
+  <circle cx="118" cy="106" r="3.2" fill="#00FF41" opacity="0.65"/>
+  <circle cx="90"  cy="122" r="3.2" fill="#00FF41" opacity="0.65"/>
+  <circle cx="62"  cy="106" r="3.2" fill="#00FF41" opacity="0.65"/>
+  <circle cx="62"  cy="74"  r="3.2" fill="#00FF41" opacity="0.65"/>
+
+  <!-- Cross hairs (very subtle) -->
+  <line x1="90" y1="26" x2="90" y2="154" stroke="#00FF41" stroke-width="0.3" opacity="0.12"/>
+  <line x1="26" y1="90" x2="154" y2="90" stroke="#00FF41" stroke-width="0.3" opacity="0.12"/>
+</svg>
