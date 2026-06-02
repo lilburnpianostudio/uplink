@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="UPLINK DEV">
-<title>UPLINK [DEV]</title>
+<title>UPLINK</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -70,11 +70,28 @@
     font-size: 10px; color: #00aa2a; letter-spacing: 1px;
   }
   .app-title-bar { padding: 8px 20px 12px; display: flex; align-items: center; justify-content: space-between; }
-  .app-title-bar h1 { font-size: 24px; font-weight: 700; color: #ffaa00; letter-spacing: 6px; text-shadow: 0 0 14px #ffaa00, 0 0 28px rgba(255,170,0,0.4); }
-  .dev-banner { background: #332200; color: #ffaa00; font-size: 9px; letter-spacing: 3px; text-align: center; padding: 3px; border-bottom: 1px solid #554400; }
+  .app-title-bar h1 { font-size: 24px; font-weight: 700; color: #00FF41; letter-spacing: 6px; text-shadow: 0 0 14px #00FF41, 0 0 28px rgba(0,255,65,0.4); }
   .app-title-bar p { font-size: 9px; color: #005500; letter-spacing: 3px; margin-top: 2px; }
   .settings-btn { background: rgba(0,30,0,0.6); border: 1px solid #00aa2a; color: #00FF41; font-size: 13px; font-family: 'Courier New'; padding: 8px 14px; border-radius: 6px; cursor: pointer; letter-spacing: 1px; text-shadow: 0 0 6px #00FF41; }
   .settings-btn:active { background: rgba(0,60,0,0.8); }
+  .help-btn { background: rgba(0,30,0,0.6); border: 1px solid #004400; color: #009922; font-size: 13px; font-family: 'Courier New'; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+  .help-btn:active { color: #00FF41; border-color: #00FF41; }
+  /* Help panel */
+  #help-panel {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 200; background: rgba(0,0,0,0.96);
+    display: none; flex-direction: column; padding: 100px 20px 20px;
+    overflow-y: auto;
+  }
+  #help-panel.active { display: flex; }
+  .help-section { margin-bottom: 20px; }
+  .help-section-title { font-size: 10px; color: #00FF41; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #002200; padding-bottom: 6px; }
+  .help-agent { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #001800; }
+  .help-agent:last-child { border-bottom: none; }
+  .help-agent-name { font-size: 13px; font-weight: 700; color: #00FF41; min-width: 60px; }
+  .help-agent-desc { font-size: 12px; color: #009922; line-height: 1.5; flex: 1; }
+  .help-rule { font-size: 12px; color: #009922; line-height: 1.7; padding: 4px 0; }
+  .help-rule::before { content: '> '; color: #00FF41; }
 
   /* ── Screens ── */
   .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; display: none; flex-direction: column; padding-top: 100px; }
@@ -280,9 +297,6 @@
     <div id="intro-msg"></div>
   </div>
 
-  <!-- DEV Banner -->
-  <div class="dev-banner">// DEV BUILD — NOT FOR PRODUCTION USE //</div>
-
   <!-- Header -->
   <div class="sys-header" id="sys-header">
     <div class="status-bar">
@@ -295,6 +309,7 @@
         <h1>⬡ UPLINK</h1>
         <p>// SECURE TERMINAL //</p>
       </div>
+      <button class="help-btn" onclick="event.stopPropagation();toggleHelp()">?</button>
       <button class="settings-btn" onclick="event.stopPropagation();toggleSettings()">CONFIG</button>
     </div>
   </div>
@@ -341,27 +356,8 @@
     <div style="padding:0 16px 14px;">
       <div class="action-bar">
 
-        <!-- Sender row -->
-        <div class="sender-row">
-          <span class="sender-label">FROM:</span>
-          <div class="sender-options">
-            <div class="sender-option" onclick="selectSender('BEN')">
-              <div class="sender-check active" id="check-BEN">✓</div>
-              <span class="sender-name">BEN</span>
-            </div>
-            <div class="sender-option" onclick="selectSender('BREE')">
-              <div class="sender-check" id="check-BREE"></div>
-              <span class="sender-name">BREE</span>
-            </div>
-            <div class="sender-option" onclick="selectSender('OTHER')">
-              <div class="sender-check" id="check-OTHER"></div>
-              <input class="sender-freeform" id="sender-freeform" type="text"
-                placeholder="OTHER" maxlength="12"
-                onclick="event.stopPropagation();selectSender('OTHER')"
-                oninput="currentSender=this.value.toUpperCase()||'OTHER'"/>
-            </div>
-          </div>
-        </div>
+        <!-- Sender set silently from Microsoft login — no display needed -->
+        <span id="sender-display" style="display:none;"></span>
 
         <!-- Jack In row -->
         <div class="jack-in-row">
@@ -482,6 +478,46 @@
       <div class="t-row dim">&gt; SIGNAL ACKNOWLEDGED. AWAIT RESPONSE.</div>
     </div>
     <button class="btn btn-green" onclick="newTransmission()">[ NEW TRANSMISSION ]</button>
+  </div>
+
+  <!-- HELP PANEL -->
+  <div id="help-panel">
+    <div class="setup-title">THE TEAM</div>
+
+    <div class="help-section">
+      <div class="help-section-title">Agents — who handles what</div>
+      <div class="help-agent"><div class="help-agent-name">LARRY</div><div class="help-agent-desc">Orchestrator. Routes every transmission to the right agent. You never talk to him directly — he just handles it.</div></div>
+      <div class="help-agent"><div class="help-agent-name">VERA</div><div class="help-agent-desc">Business ops. Leads, students, scheduling, roster. Most of your transmissions go here. Vera = truth.</div></div>
+      <div class="help-agent"><div class="help-agent-name">FORTE</div><div class="help-agent-desc">Marketing creative. Social copy, post drafts, lead replies, captions. Drafts only — Ben approves before anything posts.</div></div>
+      <div class="help-agent"><div class="help-agent-name">CANVAS</div><div class="help-agent-desc">Design. Graphics, flyers, social visuals. Request a design and Canvas builds it.</div></div>
+      <div class="help-agent"><div class="help-agent-name">SCOUT</div><div class="help-agent-desc">Research. Trends, competitors, what's working on TikTok. Ask Scout before building a campaign.</div></div>
+      <div class="help-agent"><div class="help-agent-name">BRIAN</div><div class="help-agent-desc">Session memory. Logs everything. You'll rarely address Brian directly.</div></div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">The flow</div>
+      <div class="help-rule">Type or dictate your thoughts freely</div>
+      <div class="help-rule">Select your name under FROM:</div>
+      <div class="help-rule">Tap the mouthpiece → Claude organizes it</div>
+      <div class="help-rule">Review, edit, check boxes for what to send</div>
+      <div class="help-rule">TRANSMIT TO THE SOURCE</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">One rule</div>
+      <div class="help-rule">Log every new lead the moment you make contact. The timestamp is your proof. If it's not logged, it's not counted.</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">Your lane</div>
+      <div class="help-rule">✓ Log leads and update status</div>
+      <div class="help-rule">✓ Request posts from Forte</div>
+      <div class="help-rule">✓ Flag things for Ben's attention</div>
+      <div class="help-rule">✗ Don't commit to pricing or start dates</div>
+      <div class="help-rule">✗ Don't post without Ben's approval</div>
+    </div>
+
+    <button class="btn btn-back" onclick="toggleHelp()" style="margin-top:8px;">[ CLOSE ]</button>
   </div>
 
   <!-- SETTINGS PANEL -->
@@ -693,6 +729,11 @@ function saveSettings(){
   if(w)localStorage.setItem('uplink_webhook_url',w);
   toggleSettings();
 }
+function toggleHelp(){
+  const p=document.getElementById('help-panel');
+  p.classList.toggle('active');
+}
+
 function toggleSettings(){
   try{
     const p=document.getElementById('settings-panel');
@@ -722,22 +763,23 @@ function showScreen(id){
 }
 
 // ════════════════════════════════════════
-// SENDER SELECTOR
+// SENDER — auto from Microsoft login
 // ════════════════════════════════════════
 let currentSender = 'BEN';
 
-function selectSender(name) {
-  currentSender = name;
-  ['BEN','BREE'].forEach(n => {
-    const el = document.getElementById('check-' + n);
-    if (n === name) {
-      el.classList.add('active');
-      el.textContent = '✓';
-    } else {
-      el.classList.remove('active');
-      el.textContent = '';
-    }
-  });
+function updateSenderDisplay() {
+  const user = localStorage.getItem('ms_user') || '';
+  // Map email/username to display name
+  if (user.toLowerCase().includes('studio@') || user.toLowerCase().includes('benanddinah')) {
+    currentSender = 'BEN';
+  } else if (user.length > 0) {
+    // Use first part of email as sender name, uppercased
+    currentSender = user.split('@')[0].split('.')[0].toUpperCase();
+  } else {
+    currentSender = 'BEN'; // default
+  }
+  const el = document.getElementById('sender-display');
+  if (el) el.textContent = currentSender;
 }
 
 // ════════════════════════════════════════
@@ -1175,7 +1217,7 @@ window.addEventListener('load', async ()=>{
   // Handle Microsoft OAuth callback
   if(window.location.search.includes('code=')){
     const ok=await handleMsCallback();
-    if(ok) console.log('Microsoft connected:',localStorage.getItem('ms_user'));
+    if(ok){ console.log('Microsoft connected:',localStorage.getItem('ms_user')); updateSenderDisplay(); }
     history.replaceState({},'',window.location.pathname);
   }
 
@@ -1184,6 +1226,7 @@ window.addEventListener('load', async ()=>{
     localStorage.removeItem('uplink_setup_done');
     localStorage.removeItem('uplink_api_key');
   }
+  updateSenderDisplay();
   if(!localStorage.getItem('uplink_setup_done')){
     showScreen('screen-setup');
   } else {
@@ -1194,3 +1237,4 @@ window.addEventListener('load', async ()=>{
 </script>
 </body>
 </html>
+
