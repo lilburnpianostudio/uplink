@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="UPLINK DEV">
-<link rel="apple-touch-icon" href="uplink-icon-dev.svg">
-<link rel="icon" href="uplink-icon-dev.svg">
+<link rel="apple-touch-icon" href="uplink-icon.svg">
+<link rel="icon" href="uplink-icon.svg">
 <title>UPLINK [DEV]</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,10 +74,31 @@
   .app-title-bar { padding: 8px 20px 12px; display: flex; align-items: center; justify-content: space-between; }
   .app-title-bar h1 { font-size: 24px; font-weight: 700; color: #00FF41; letter-spacing: 6px; text-shadow: 0 0 14px #00FF41, 0 0 28px rgba(0,255,65,0.4); }
   .app-title-bar p { font-size: 9px; color: #005500; letter-spacing: 3px; margin-top: 2px; }
-  .settings-btn { background: rgba(0,30,0,0.6); border: 1px solid #00aa2a; color: #00FF41; font-size: 13px; font-family: 'Courier New'; padding: 8px 14px; border-radius: 6px; cursor: pointer; letter-spacing: 1px; text-shadow: 0 0 6px #00FF41; }
-  .settings-btn:active { background: rgba(0,60,0,0.8); }
-  .help-btn { background: rgba(0,30,0,0.6); border: 1px solid #004400; color: #009922; font-size: 13px; font-family: 'Courier New'; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-  .help-btn:active { color: #00FF41; border-color: #00FF41; }
+
+  /* ── Bullet hamburger menu ── */
+  .menu-btn {
+    background: none; border: none; cursor: pointer; padding: 6px;
+    display: flex; flex-direction: column; gap: 5px; align-items: flex-end;
+  }
+  .bullet-line {
+    display: flex; align-items: center; gap: 0;
+    filter: drop-shadow(0 0 3px #00FF41);
+  }
+  .menu-dropdown {
+    position: absolute; top: 88px; right: 14px; z-index: 300;
+    background: rgba(0,0,0,0.96); border: 1px solid #004400;
+    border-radius: 8px; overflow: hidden; display: none; min-width: 140px;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-item {
+    padding: 14px 18px; font-size: 12px; color: #009922;
+    letter-spacing: 2px; cursor: pointer; border-bottom: 1px solid #002200;
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Courier New'; transition: background 0.15s;
+  }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item:hover { background: rgba(0,255,65,0.06); color: #00FF41; }
+  .menu-item .mi-icon { font-size: 14px; }
   /* Help panel */
   #help-panel {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -145,24 +166,42 @@
   .blink-cursor.hidden { display: none; }
   .mic-hint { font-size: 9px; color: #004a00; letter-spacing: 2px; margin: 6px 0 10px; text-align: center; }
 
-  /* Mouthpiece encode button */
-  .encode-btn {
-    display: flex; flex-direction: column; align-items: center; gap: 5px;
-    cursor: pointer; background: none; border: none; padding: 6px 0 2px; width: 100%;
-    transition: transform 0.15s;
+  /* ── Rotary Handset ── */
+  .handset-container {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 4px 0 8px;
   }
-  .encode-btn:active { transform: scale(0.93); }
-  .mouthpiece-wrap { filter: drop-shadow(0 0 10px #00FF41) drop-shadow(0 0 24px rgba(0,255,65,0.5)); animation: icon-pulse 2.6s ease-in-out infinite; }
-  .encode-label { font-size: 14px; color: #00FF41; letter-spacing: 4px; text-shadow: 0 0 8px #00FF41; font-weight: 700; }
-  .encode-sub { font-size: 11px; color: #006600; letter-spacing: 2px; }
-  .raw-signal-btn {
-    display: block; width: 100%; margin-top: 10px; padding: 12px;
-    background: transparent; border: 1px solid #004400;
-    color: #009922; font-size: 12px; font-family: 'Courier New';
-    letter-spacing: 3px; cursor: pointer; border-radius: 6px;
-    text-transform: uppercase; transition: all 0.15s;
+  .handset-wrap {
+    position: relative; cursor: pointer;
+    filter: drop-shadow(0 0 8px rgba(0,255,65,0.4));
+    transition: filter 0.2s;
   }
-  .raw-signal-btn:active { color: #00FF41; border-color: #00FF41; }
+  .handset-wrap.listening {
+    filter: drop-shadow(0 0 20px #00FF41) drop-shadow(0 0 50px rgba(0,255,65,0.8));
+    animation: listen-pulse 0.8s ease-in-out infinite;
+  }
+  .handset-hint {
+    font-size: 10px; color: #006600; letter-spacing: 2px; text-align: center;
+    transition: color 0.3s;
+  }
+  .handset-hint.active { color: #00FF41; text-shadow: 0 0 6px #00FF41; }
+  @keyframes listen-pulse {
+    0%,100% { filter: drop-shadow(0 0 16px #00FF41) drop-shadow(0 0 40px rgba(0,255,65,0.7)); }
+    50%      { filter: drop-shadow(0 0 28px #00FF41) drop-shadow(0 0 60px rgba(0,255,65,0.9)); }
+  }
+
+  /* ── Cradle phone (Screen 4) ── */
+  .cradle-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    cursor: pointer;
+    filter: drop-shadow(0 0 14px #00FF41) drop-shadow(0 0 30px rgba(0,255,65,0.35));
+    transition: filter 0.2s;
+  }
+  .cradle-wrap:active { filter: drop-shadow(0 0 24px #00FF41) drop-shadow(0 0 50px rgba(0,255,65,0.7)); }
+  .pickup-hint {
+    font-size: 11px; color: #009922; letter-spacing: 3px; text-align: center;
+    animation: blink 1.8s step-end infinite;
+  }
 
   /* Sender + Jack In section */
   .action-bar {
@@ -302,17 +341,39 @@
   <!-- Header -->
   <div class="sys-header" id="sys-header">
     <div class="status-bar">
-      <span>SYS:ONLINE</span>
+      <span id="status-claude" style="color:#555500;">CLAUDE ○</span>
       <span id="sys-time">--:--</span>
-      <span>SECURE</span>
+      <span id="status-ms" style="color:#555500;">MS ○</span>
     </div>
     <div class="app-title-bar">
       <div>
         <h1>⬡ UPLINK</h1>
-        <p>// SECURE TERMINAL //</p>
+        <p>// NEBUCHADNEZZAR //</p>
       </div>
-      <button class="help-btn" onclick="event.stopPropagation();toggleHelp()">?</button>
-      <button class="settings-btn" onclick="event.stopPropagation();toggleSettings()">CONFIG</button>
+      <!-- Bullet hamburger menu — sideways shell = death defeated -->
+      <button class="menu-btn" onclick="event.stopPropagation();toggleMenu()">
+        <!-- Three sideways bullets -->
+        <svg width="38" height="16" viewBox="0 0 38 16" fill="none">
+          <!-- Bullet — clean profile, pointing right -->
+          <!-- Casing -->
+          <rect x="1" y="4" width="18" height="8" rx="1.5"
+            stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.1)"/>
+          <!-- Primer circle -->
+          <circle cx="5" cy="8" r="2.2" stroke="#00FF41" stroke-width="0.8" fill="none" opacity="0.7"/>
+          <!-- Crimp -->
+          <line x1="19" y1="4" x2="19" y2="12" stroke="#00FF41" stroke-width="1" opacity="0.6"/>
+          <!-- Bullet nose -->
+          <path d="M 19,4 L 30,4 Q 37,6 37,8 Q 37,10 30,12 L 19,12 Z"
+            stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.18)"/>
+          <!-- Tip glow -->
+          <circle cx="36" cy="8" r="2" fill="#00FF41" opacity="0.9"/>
+        </svg>
+      </button>
+      <!-- Dropdown -->
+      <div id="menu-dropdown" class="menu-dropdown">
+        <div class="menu-item" onclick="toggleMenu();toggleHelp()"><span class="mi-icon">⬡</span>ABOUT</div>
+        <div class="menu-item" onclick="toggleMenu();toggleSettings()"><span class="mi-icon">⚙</span>CONFIG</div>
+      </div>
     </div>
   </div>
 
@@ -349,52 +410,111 @@
 
   <!-- SCREEN 1: WRITE -->
   <div id="screen-write" class="screen">
-    <div class="terminal-label" style="padding:0 16px; margin-bottom:7px; margin-top:2px;">INPUT TRANSMISSION</div>
-    <div class="input-wrap" style="padding:0 16px;">
-      <textarea id="user-input" placeholder="[ BEGIN TRANSMISSION... ]"></textarea>
+    <div class="input-wrap" style="padding:108px 16px 0; flex:1;">
+      <textarea id="user-input" placeholder="" style="min-height:220px;"></textarea>
       <span class="blink-cursor hidden" id="blink-cursor">_</span>
     </div>
-    <div class="mic-hint">[ 🎙 TAP KEYBOARD MIC TO DICTATE ]</div>
-    <div style="padding:0 16px 14px;">
-      <div class="action-bar">
+    <span id="sender-display" style="display:none;"></span>
 
-        <!-- Sender set silently from Microsoft login — no display needed -->
-        <span id="sender-display" style="display:none;"></span>
+    <!-- Horizontal handset — lays in bottom corner, picked up at slight angle -->
+    <div style="position:absolute; bottom:20px; right:14px; z-index:15;">
+      <div class="handset-wrap" id="handset-wrap"
+        style="transform: rotate(-15deg); transform-origin: right bottom;"
+          ontouchstart="handsetTouchStart(event)"
+          ontouchend="handsetTouchEnd(event)"
+          onmousedown="handsetTouchStart(event)"
+          onmouseup="handsetTouchEnd(event)">
+          <svg width="160" height="62" viewBox="0 0 160 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hbody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="#00FF41" stop-opacity="0.14"/>
+                <stop offset="35%"  stop-color="#003a00"/>
+                <stop offset="100%" stop-color="#001000"/>
+              </linearGradient>
+            </defs>
 
-        <!-- Jack In row -->
-        <div class="jack-in-row">
-          <button class="jack-in-btn" onclick="startEncoding()">[ JACK IN ]</button>
-          <div class="mouthpiece-small" onclick="startEncoding()">
-            <svg width="44" height="44" viewBox="0 0 72 72" fill="none">
-              <circle cx="36" cy="36" r="34" stroke="#00FF41" stroke-width="1.8" fill="#000"/>
-              <circle cx="36" cy="36" r="26" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.5"/>
-              <circle cx="36" cy="36" r="18" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.4"/>
-              <circle cx="36" cy="36" r="3.5" fill="#00FF41" opacity="0.9"/>
-              <circle cx="36" cy="4"    r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="53.6" cy="9.4" r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="65.6" cy="24"  r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="68"   cy="42"  r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="60.6" cy="58.6" r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="46"   cy="68"  r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="26"   cy="68"  r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="11.4" cy="58.6" r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="4"    cy="42"  r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="6.4"  cy="24"  r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="18.4" cy="9.4"  r="2.8" fill="#00FF41" opacity="0.85"/>
-              <circle cx="36"   cy="12" r="2.2" fill="#00FF41" opacity="0.7"/>
-              <circle cx="52.4" cy="19.6" r="2.2" fill="#00FF41" opacity="0.7"/>
-              <circle cx="60"   cy="36"  r="2.2" fill="#00FF41" opacity="0.7"/>
-              <circle cx="52.4" cy="52.4" r="2.2" fill="#00FF41" opacity="0.7"/>
-              <circle cx="36"   cy="60"  r="2.2" fill="#00FF41" opacity="0.7"/>
-              <circle cx="19.6" cy="52.4" r="2.2" fill="#00FF41" opacity="0.7"/>
-              <circle cx="12"   cy="36"  r="2.2" fill="#00FF41" opacity="0.7"/>
-              <circle cx="19.6" cy="19.6" r="2.2" fill="#00FF41" opacity="0.7"/>
-            </svg>
-          </div>
+            <!-- ═══ HORIZONTAL HANDSET BODY — true banana phone shape ═══ -->
+            <!-- Shadow layer -->
+            <path d="M 24,6 C 10,6 4,14 4,31 C 4,48 10,56 24,56
+              C 36,56 44,52 56,51 C 68,50 82,50 94,51
+              C 106,52 116,56 136,56 C 150,56 156,48 156,31
+              C 156,14 150,6 136,6 C 116,6 106,10 94,11
+              C 82,12 68,12 56,11 C 44,10 36,6 24,6 Z"
+              fill="#000d00" transform="translate(2,2)" opacity="0.4"/>
+            <!-- Main body — banana handset outline -->
+            <path d="M 24,6 C 10,6 4,14 4,31 C 4,48 10,56 24,56
+              C 36,56 44,52 56,51 C 68,50 82,50 94,51
+              C 106,52 116,56 136,56 C 150,56 156,48 156,31
+              C 156,14 150,6 136,6 C 116,6 106,10 94,11
+              C 82,12 68,12 56,11 C 44,10 36,6 24,6 Z"
+              stroke="#00FF41" stroke-width="1.5" fill="url(#hbody)"/>
+            <!-- Top specular highlight -->
+            <path d="M 26,7 C 14,7 6,13 6,22 C 8,18 14,8 26,8 C 38,8 46,11 58,12"
+              stroke="#00FF41" stroke-width="0.8" fill="none" opacity="0.2"/>
+            <!-- Divider lines separating cups from handle -->
+            <line x1="52" y1="9"  x2="52" y2="53" stroke="#00FF41" stroke-width="0.8" opacity="0.25"/>
+            <line x1="108" y1="9" x2="108" y2="53" stroke="#00FF41" stroke-width="0.8" opacity="0.25"/>
+
+            <!-- ═══ EARPIECE (left cup) — tap to SEND ═══ -->
+            <circle cx="26" cy="31" r="18" stroke="#00FF41" stroke-width="1" fill="#001a00" opacity="0.9"/>
+            <circle cx="26" cy="31" r="13" stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.5"/>
+            <circle cx="26" cy="18" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="36" cy="24" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="36" cy="38" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="26" cy="44" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="16" cy="38" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="16" cy="24" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="26" cy="31" r="2.2" fill="#00FF41" opacity="0.65"/>
+            <circle cx="26" cy="31" r="1"   fill="#000"/>
+            <circle cx="26" cy="31" r="21" fill="none" stroke="#00FF41" stroke-width="0.5" opacity="0.22">
+              <animate attributeName="opacity" values="0.22;0.55;0.22" dur="3.2s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- ═══ HANDLE — grip texture ═══ -->
+            <line x1="74" y1="17" x2="74" y2="45" stroke="#00FF41" stroke-width="0.5" opacity="0.15"/>
+            <line x1="80" y1="15" x2="80" y2="47" stroke="#00FF41" stroke-width="0.4" opacity="0.12"/>
+            <line x1="86" y1="15" x2="86" y2="47" stroke="#00FF41" stroke-width="0.4" opacity="0.12"/>
+
+            <!-- ═══ MOUTHPIECE (right cup) — 726 — tap to SPEAK, cord exits here ═══ -->
+            <circle cx="134" cy="31" r="18" stroke="#00FF41" stroke-width="1.3" fill="#001a00" opacity="0.95"/>
+            <circle cx="134" cy="31" r="13" stroke="#00FF41" stroke-width="0.9" fill="none" opacity="0.55"/>
+            <circle cx="134" cy="31" r="8"  stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.4"/>
+            <circle cx="134" cy="31" r="2.2" fill="#00FF41" opacity="0.9"/>
+            <circle cx="134" cy="31" r="1"   fill="#000"/>
+            <!-- 7 outer -->
+            <circle cx="134" cy="14" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="147" cy="20" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="151" cy="31" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="147" cy="42" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="134" cy="48" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="121" cy="42" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="117" cy="31" r="2"   fill="#00FF41" opacity="0.88"/>
+            <!-- 2 middle -->
+            <circle cx="134" cy="19" r="1.4" fill="#00FF41" opacity="0.7"/>
+            <circle cx="134" cy="43" r="1.4" fill="#00FF41" opacity="0.7"/>
+            <!-- 6 inner hexagon -->
+            <circle cx="134" cy="24" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="140" cy="27" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="140" cy="35" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="134" cy="38" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="128" cy="35" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="128" cy="27" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <!-- Mouthpiece glow rings -->
+            <circle id="mouth-glow" cx="134" cy="31" r="21" fill="none" stroke="#00FF41" stroke-width="0.6" opacity="0.35">
+              <animate attributeName="opacity" values="0.35;0.75;0.35" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle id="mouth-active" cx="134" cy="31" r="25" fill="none" stroke="#00FF41" stroke-width="2.5" opacity="0" stroke-dasharray="5 3">
+              <animate attributeName="opacity" values="0;1;0" dur="0.5s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- ═══ CORD — exits right (mouthpiece), fades off ═══ -->
+            <path d="M 154,36 C 158,40 162,44 164,52 C 166,60 163,67 167,74"
+              stroke="#00FF41" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+            <path d="M 167,74 C 169,80 167,86 171,92"
+              stroke="#00FF41" stroke-width="1.2" fill="none" opacity="0.18" stroke-linecap="round"/>
+
+          </svg>
         </div>
-
-        <button class="raw-signal-btn" onclick="sendRaw()" style="margin-top:8px;">[ RAW SIGNAL — BYPASS ]</button>
-      </div>
     </div>
   </div>
 
@@ -468,18 +588,66 @@
     </div>
   </div>
 
-  <!-- SCREEN 4: SENT -->
-  <div id="screen-sent" class="screen">
-    <div class="sent-symbol">⬡</div>
-    <div class="sent-title">SIGNAL TRANSMITTED</div>
-    <div class="sent-sub">MESSAGE RECEIVED. STAND BY.</div>
-    <div class="terminal-box">
-      <div class="t-row">&gt; STATUS: <span>DELIVERED ✓</span></div>
-      <div class="t-row">&gt; METHOD: <span id="sent-delivery">--</span></div>
-      <div class="t-row">&gt; FILE: <span id="sent-filename">--</span></div>
-      <div class="t-row dim">&gt; SIGNAL ACKNOWLEDGED. AWAIT RESPONSE.</div>
+  <!-- SCREEN 4: SENT — phone in cradle, tap to pick up -->
+  <div id="screen-sent" class="screen" style="background:rgba(0,0,0,0.0); justify-content:center; align-items:center; padding-top:100px;">
+
+    <div class="sent-title" style="margin-bottom:4px;">SIGNAL TRANSMITTED</div>
+    <div style="font-size:9px;color:#005500;letter-spacing:3px;margin-bottom:6px;">MESSAGE RECEIVED. STAND BY.</div>
+
+    <!-- File info — small, unobtrusive -->
+    <div style="font-size:9px;color:#004400;font-family:'Courier New';margin-bottom:28px;text-align:center;letter-spacing:0.5px;">
+      <span id="sent-delivery" style="color:#006600;"></span><br>
+      <span id="sent-filename" style="color:#004400;"></span>
     </div>
-    <button class="btn btn-green" onclick="newTransmission()">[ NEW TRANSMISSION ]</button>
+
+    <!-- Cradle phone — tap to pick up -->
+    <div class="cradle-wrap" onclick="newTransmission()" title="Pick up to transmit">
+      <svg width="160" height="180" viewBox="0 0 160 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- ═══ PHONE BASE / CRADLE ═══ -->
+        <rect x="10" y="110" width="140" height="60" rx="12" stroke="#00FF41" stroke-width="1.5" fill="#000" opacity="0.9"/>
+        <!-- Cradle indents for handset -->
+        <path d="M 30,110 Q 30,96 45,90 L 65,88" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.6"/>
+        <path d="M 130,110 Q 130,96 115,90 L 95,88" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.6"/>
+        <!-- Base details -->
+        <line x1="30" y1="130" x2="130" y2="130" stroke="#00FF41" stroke-width="0.5" opacity="0.2"/>
+        <circle cx="80" cy="145" r="12" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.3"/>
+        <!-- Dial dots on base (decorative) -->
+        <circle cx="60" cy="145" r="2" fill="#00FF41" opacity="0.25"/>
+        <circle cx="100" cy="145" r="2" fill="#00FF41" opacity="0.25"/>
+        <circle cx="80" cy="160" r="1.5" fill="#00FF41" opacity="0.2"/>
+
+        <!-- ═══ HANDSET IN CRADLE (resting at angle) ═══ -->
+        <!-- Handset body - rotated ~-30deg, centered on cradle -->
+        <g transform="translate(80,80) rotate(-28) translate(-28,-72)">
+          <!-- Body -->
+          <path d="M 28,8 C 44,8 50,18 50,30 C 51,40 47,50 44,60 C 41,72 41,82 44,94 C 47,104 51,114 50,124 C 50,136 44,144 28,144 C 12,144 6,136 6,124 C 5,114 9,104 12,94 C 15,82 15,72 12,60 C 9,50 5,40 6,30 C 6,18 12,8 28,8 Z"
+            stroke="#00FF41" stroke-width="1.8" fill="#000"/>
+          <!-- Earpiece -->
+          <circle cx="28" cy="28" r="15" stroke="#00FF41" stroke-width="1" fill="#000" opacity="0.9"/>
+          <circle cx="28" cy="20" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="37" cy="25" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="37" cy="35" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="28" cy="40" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="19" cy="35" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="19" cy="25" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="28" cy="28" r="2.5" fill="#00FF41" opacity="0.6"/>
+          <!-- Mouthpiece -->
+          <circle cx="28" cy="124" r="16" stroke="#00FF41" stroke-width="1.2" fill="#000" opacity="0.95"/>
+          <circle cx="28" cy="110" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="40" cy="117" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="44" cy="124" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="40" cy="131" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="28" cy="138" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="16" cy="131" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="12" cy="124" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="28" cy="124" r="2" fill="#00FF41" opacity="0.6"/>
+        </g>
+
+      </svg>
+      <div class="pickup-hint">[ PICK UP TO TRANSMIT ]</div>
+    </div>
+
   </div>
 
   <!-- HELP PANEL -->
@@ -498,11 +666,10 @@
 
     <div class="help-section">
       <div class="help-section-title">The flow</div>
-      <div class="help-rule">Type or dictate your thoughts freely</div>
-      <div class="help-rule">Select your name under FROM:</div>
-      <div class="help-rule">Tap the mouthpiece → Claude organizes it</div>
-      <div class="help-rule">Review, edit, check boxes for what to send</div>
-      <div class="help-rule">TRANSMIT TO THE SOURCE</div>
+      <div class="help-rule">Tap SPEAK (mouthpiece) → speak freely</div>
+      <div class="help-rule">Tap SEND (earpiece) → transmits raw to Larry</div>
+      <div class="help-rule">Hold SEND → Claude polishes first → review → transmit</div>
+      <div class="help-rule">Log every lead the moment you make contact</div>
     </div>
 
     <div class="help-section">
@@ -604,12 +771,14 @@ const COL_W = 14;
 let drops = [], colSpecial = [], currentScreen = 'write';
 
 function initCanvas() {
-  canvas.width  = canvas.offsetWidth;
-  canvas.height = canvas.offsetHeight;
+  const p = canvas.parentElement;
+  canvas.width  = p ? p.clientWidth  : window.innerWidth;
+  canvas.height = p ? p.clientHeight : window.innerHeight;
   const cols = Math.floor(canvas.width / COL_W);
   drops     = Array.from({length:cols}, () => Math.floor(Math.random()*-80));
   colSpecial = Array.from({length:cols}, () => Math.random() < 0.12);
 }
+window.addEventListener('resize', initCanvas);
 function randChar() { return MATRIX_CHARS[Math.floor(Math.random()*MATRIX_CHARS.length)]; }
 function drawMatrix() {
   const full = currentScreen === 'matrix-full';
@@ -631,8 +800,9 @@ function drawMatrix() {
     drops[i]++;
   }
 }
-initCanvas();
-setInterval(drawMatrix,45);
+// Init canvas after layout is fully rendered
+setTimeout(initCanvas, 80);
+setInterval(drawMatrix, 45);
 
 // ════════════════════════════════════════
 // INTRO SEQUENCE
@@ -683,7 +853,7 @@ async function runIntroSequence(){
   msgEl.innerHTML='';
   const sequence=[
     {text:"Wake up...",               speed:130},
-    {text:getWeeklyMsg().replace(/\.?$/,'...'), speed:115},
+    {text:getWeeklyMsg(), speed:115},
     {text:"Follow Jesus...",         speed:130},
     {text:"Knock, knock...",         speed:130, final:true},
   ];
@@ -731,9 +901,38 @@ function saveSettings(){
   if(w)localStorage.setItem('uplink_webhook_url',w);
   toggleSettings();
 }
+function toggleMenu(){
+  document.getElementById('menu-dropdown').classList.toggle('open');
+}
+// Close menu when tapping elsewhere
+document.addEventListener('click', () => {
+  const d = document.getElementById('menu-dropdown');
+  if (d) d.classList.remove('open');
+});
+
 function toggleHelp(){
   const p=document.getElementById('help-panel');
   p.classList.toggle('active');
+}
+
+function updateStatusBar(){
+  const hasKey       = !!getApiKey();
+  const hasMicrosoft = !!localStorage.getItem('ms_user');
+  const cEl = document.getElementById('status-claude');
+  const mEl = document.getElementById('status-ms');
+  // CLAUDE status
+  if(cEl){
+    cEl.textContent = hasKey ? 'CLAUDE ✓' : 'CLAUDE ○';
+    cEl.style.color = hasKey ? '#00FF41' : '#555500';
+  }
+  // NEB status — connected if Microsoft account linked (means Larry's ship can receive)
+  if(mEl){
+    mEl.textContent = hasMicrosoft ? 'NEB ✓' : 'NEB ○';
+    mEl.style.color = hasMicrosoft ? '#00FF41' : '#555500';
+    mEl.title       = hasMicrosoft
+      ? 'Nebuchadnezzar online — Larry and team receiving'
+      : 'Nebuchadnezzar offline — connect Microsoft account';
+  }
 }
 
 function toggleSettings(){
@@ -762,6 +961,99 @@ function showScreen(id){
   currentScreen=id.replace('screen-','');
   document.getElementById('sys-header').style.display=(id==='screen-matrix-full')?'none':'';
   if(id==='screen-write') document.getElementById('user-input').focus();
+}
+
+// ════════════════════════════════════════
+// SESSION TRACKING — intro only on fresh open
+// ════════════════════════════════════════
+let sessionActive = false;
+
+// ════════════════════════════════════════
+// WEB SPEECH API
+// ════════════════════════════════════════
+let recognition = null;
+let isListening  = false;
+
+function startDictation() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) { alert('Voice not supported in this browser. Use Safari on iPhone.'); return; }
+  if (isListening) { stopDictation(); return; }
+
+  recognition = new SpeechRec();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = (e) => {
+    let t = '';
+    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+    ta.value = t;
+    cur.classList.toggle('hidden', t.length > 0);
+  };
+  recognition.onerror = () => stopDictation();
+  recognition.onend   = () => { isListening = false; updateHandsetHint(); };
+
+  recognition.start();
+  isListening = true;
+  updateHandsetHint();
+}
+
+function stopDictation() {
+  if (recognition) { recognition.stop(); recognition = null; }
+  isListening = false;
+  updateHandsetHint();
+}
+
+function updateHandsetHint() {
+  const hw  = document.getElementById('handset-wrap');
+  const ma  = document.getElementById('mouth-active');
+  if (isListening) {
+    if (hw) hw.classList.add('listening');
+    if (ma) { ma.style.opacity='1'; ma.style.display=''; }
+  } else {
+    if (hw) hw.classList.remove('listening');
+    if (ma) { ma.style.opacity='0'; }
+  }
+}
+
+// ── Handset interaction ──
+let longPressTimer = null;
+
+function handsetTouchStart(e) {
+  e.preventDefault();
+  // Determine which part was tapped
+  const svg = e.currentTarget.querySelector('svg');
+  const rect = svg.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const relX = (clientX - rect.left) / rect.width; // 0=left, 1=right
+
+  if (relX > 0.55) {
+    // MOUTHPIECE (right 45%) — tap to dictate
+    startDictation();
+  } else {
+    // EARPIECE (left 55%) — tap = raw send, long-press = Claude
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      // Long press — Claude polish
+      const raw = ta.value.trim();
+      if (!raw) return;
+      stopDictation();
+      startEncoding();
+    }, 600);
+  }
+}
+
+function handsetTouchEnd(e) {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+    // Short tap on earpiece — raw send
+    const raw = ta.value.trim();
+    if (raw) {
+      stopDictation();
+      sendRaw();
+    }
+  }
 }
 
 // ════════════════════════════════════════
@@ -1079,7 +1371,8 @@ async function transmitToSource(){
 function newTransmission(){
   ta.value='';
   cur.classList.remove('hidden');
-  showScreen('screen-write');
+  stopDictation();
+  showScreen('screen-write'); // no intro — session already active
 }
 
 async function sendRaw(){
@@ -1219,7 +1512,7 @@ window.addEventListener('load', async ()=>{
   // Handle Microsoft OAuth callback
   if(window.location.search.includes('code=')){
     const ok=await handleMsCallback();
-    if(ok){ console.log('Microsoft connected:',localStorage.getItem('ms_user')); updateSenderDisplay(); }
+    if(ok){ console.log('Microsoft connected:',localStorage.getItem('ms_user')); updateSenderDisplay(); updateStatusBar(); }
     history.replaceState({},'',window.location.pathname);
   }
 
@@ -1229,11 +1522,15 @@ window.addEventListener('load', async ()=>{
     localStorage.removeItem('uplink_api_key');
   }
   updateSenderDisplay();
+  updateStatusBar();
   if(!localStorage.getItem('uplink_setup_done')){
     showScreen('screen-setup');
   } else {
     showScreen('screen-write');
-    runIntroSequence();
+    if(!sessionActive) {
+      sessionActive = true;
+      runIntroSequence();
+    }
   }
 });
 </script>
