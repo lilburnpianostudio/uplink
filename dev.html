@@ -203,47 +203,7 @@
     animation: blink 1.8s step-end infinite;
   }
 
-  /* Sender + Jack In section */
-  .action-bar {
-    padding: 10px 0 14px;
-  }
-  .sender-row {
-    display: flex; align-items: center; gap: 0; margin-bottom: 12px;
-  }
-  .sender-label { font-size: 11px; color: #006600; letter-spacing: 2px; margin-right: 10px; flex-shrink: 0; }
-  .sender-options { display: flex; align-items: center; gap: 14px; flex: 1; flex-wrap: wrap; }
-  .sender-option { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .sender-check {
-    width: 22px; height: 22px; border: 1px solid #004400; border-radius: 3px;
-    background: #000; display: flex; align-items: center; justify-content: center;
-    font-size: 13px; color: #00FF41; text-shadow: 0 0 5px #00FF41;
-    transition: all 0.15s; flex-shrink: 0;
-  }
-  .sender-check.active { border-color: #00FF41; background: #001800; }
-  .sender-name { font-size: 15px; color: #00cc33; letter-spacing: 1px; font-weight: 700; }
-  .sender-freeform {
-    background: transparent; border: none; border-bottom: 1px solid #004400;
-    color: #00FF41; font-family: 'Courier New'; font-size: 15px; font-weight: 700;
-    letter-spacing: 1px; width: 80px; outline: none; caret-color: #00FF41;
-  }
-  .sender-freeform::placeholder { color: #004400; }
-  .jack-in-row {
-    display: flex; align-items: center; gap: 12px;
-  }
-  .jack-in-btn {
-    flex: 1; padding: 16px; background: transparent; border: 1px solid #00FF41;
-    color: #00FF41; font-size: 16px; font-family: 'Courier New'; font-weight: 700;
-    letter-spacing: 4px; cursor: pointer; border-radius: 8px;
-    text-shadow: 0 0 8px #00FF41;
-    box-shadow: 0 0 14px rgba(0,255,65,0.28), inset 0 0 14px rgba(0,255,65,0.04);
-    transition: all 0.15s; text-transform: uppercase;
-  }
-  .jack-in-btn:active { transform: scale(0.97); background: rgba(0,255,65,0.07); }
-  .mouthpiece-small {
-    flex-shrink: 0; cursor: pointer; transition: transform 0.15s;
-    filter: drop-shadow(0 0 8px #00FF41);
-  }
-  .mouthpiece-small:active { transform: scale(0.9); }
+  /* Sender auto-set from login — no UI needed */
 
   /* ══ SCREEN 2 — PROCESSING ══ */
   #screen-matrix-full { background: transparent; z-index: 15; padding-top: 0; justify-content: center; align-items: center; }
