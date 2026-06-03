@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="UPLINK DEV">
+<meta name="apple-mobile-web-app-title" content="UPLINK">
 <link rel="apple-touch-icon" href="uplink-icon.png">
 <link rel="icon" href="uplink-icon.png">
-<title>UPLINK [DEV]</title>
+<title>UPLINK</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -384,7 +384,7 @@
           ontouchend="handsetTouchEnd(event)"
           onmousedown="handsetTouchStart(event)"
           onmouseup="handsetTouchEnd(event)">
-          <svg width="160" height="62" viewBox="0 0 160 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="160" height="86" viewBox="0 0 160 86" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="hbody" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%"   stop-color="#00FF41" stop-opacity="0.14"/>
@@ -473,6 +473,12 @@
             <path d="M 167,74 C 169,80 167,86 171,92"
               stroke="#00FF41" stroke-width="1.2" fill="none" opacity="0.18" stroke-linecap="round"/>
 
+            <!-- ═══ LABELS — below each cup ═══ -->
+            <text x="26" y="70" text-anchor="middle" font-family="'Courier New',monospace" font-size="7" fill="#00FF41" opacity="0.9" letter-spacing="1.5">SEND</text>
+            <text x="26" y="79" text-anchor="middle" font-family="'Courier New',monospace" font-size="5.5" fill="#005500" opacity="1" letter-spacing="0.3">tap · hold=polish</text>
+            <text x="134" y="70" text-anchor="middle" font-family="'Courier New',monospace" font-size="7" fill="#00FF41" opacity="0.9" letter-spacing="1.5">SPEAK</text>
+            <text x="134" y="79" text-anchor="middle" font-family="'Courier New',monospace" font-size="5.5" fill="#005500" opacity="1" letter-spacing="0.3">tap=dictate</text>
+
           </svg>
         </div>
     </div>
@@ -551,13 +557,13 @@
   <!-- SCREEN 4: SENT — phone in cradle, tap to pick up -->
   <div id="screen-sent" class="screen" style="background:rgba(0,0,0,0.0); justify-content:center; align-items:center; padding-top:100px;">
 
-    <div class="sent-title" style="margin-bottom:4px;">SIGNAL TRANSMITTED</div>
-    <div style="font-size:9px;color:#005500;letter-spacing:3px;margin-bottom:6px;">MESSAGE RECEIVED. STAND BY.</div>
+    <div id="sent-title" class="sent-title" style="margin-bottom:4px;">SIGNAL TRANSMITTED</div>
+    <div id="sent-subtitle" style="font-size:9px;color:#005500;letter-spacing:3px;margin-bottom:6px;">MESSAGE RECEIVED. STAND BY.</div>
 
-    <!-- File info — small, unobtrusive -->
-    <div style="font-size:9px;color:#004400;font-family:'Courier New';margin-bottom:28px;text-align:center;letter-spacing:0.5px;">
-      <span id="sent-delivery" style="color:#006600;"></span><br>
-      <span id="sent-filename" style="color:#004400;"></span>
+    <!-- File info -->
+    <div style="font-size:10px;font-family:'Courier New';margin-bottom:28px;text-align:center;letter-spacing:0.5px;">
+      <span id="sent-delivery" style="color:#006600;font-weight:700;"></span><br>
+      <span id="sent-filename" style="color:#004400;font-size:9px;"></span>
     </div>
 
     <!-- Cradle phone — tap to pick up -->
@@ -1324,7 +1330,30 @@ async function transmitToSource(){
     }
   }
 
-  document.getElementById('sent-delivery').textContent=deliveryMethod;
+  showSentScreen(sent, deliveryMethod);
+}
+
+function showSentScreen(success, method){
+  const titleEl=document.getElementById('sent-title');
+  const subtitleEl=document.getElementById('sent-subtitle');
+  const deliveryEl=document.getElementById('sent-delivery');
+  const confirmed=success&&(method.includes('ONEDRIVE')||method.includes('WEBHOOK'));
+  if(confirmed){
+    titleEl.textContent='SIGNAL TRANSMITTED';
+    titleEl.style.color='';
+    titleEl.style.textShadow='';
+    subtitleEl.textContent='MESSAGE RECEIVED. STAND BY.';
+    subtitleEl.style.color='#005500';
+    deliveryEl.style.color='#00FF41';
+  } else {
+    titleEl.textContent='⚠ DELIVERY FAILED';
+    titleEl.style.color='#ff4400';
+    titleEl.style.textShadow='0 0 14px #ff4400';
+    subtitleEl.textContent='GO TO CONFIG → RECONNECT MICROSOFT';
+    subtitleEl.style.color='#ff4400';
+    deliveryEl.style.color='#ff6600';
+  }
+  deliveryEl.textContent=method;
   showScreen('screen-sent');
 }
 
@@ -1343,18 +1372,58 @@ async function sendRaw(){
   const filename=`signal-raw-${currentSender}-${ts}.md`;
   const md=`# Raw Signal — ${ts}\n_Source: UPLINK / ${currentSender} — unprocessed_\n\n---\n\n${raw}\n`;
   document.getElementById('sent-filename').textContent=filename;
-  const webhookUrl=getWebhook();
-  if(webhookUrl){
-    try{await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});}
-    catch(e){}
-  }
+
+  let sent=false, deliveryMethod='UNKNOWN';
+
+  // Option A: Graph API (primary — same as transmitToSource)
   try{
-    const file=new File([md],filename,{type:'text/plain'});
-    await navigator.share({title:'Raw Signal '+ts,files:[file]});
+    const token=await getMsToken();
+    if(token){
+      const graphResp=await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/root:/PKA-Business/Team-Inbox/${encodeURIComponent(filename)}:/content`,
+        {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:md}
+      );
+      if(graphResp.ok){
+        sent=true;
+        deliveryMethod='ONEDRIVE DIRECT ✓';
+      } else {
+        const errBody=await graphResp.json().catch(()=>({}));
+        deliveryMethod='GRAPH FAILED: '+graphResp.status+' — '+(errBody.error?.message||'unknown');
+        console.warn('Graph API failed:',graphResp.status,errBody);
+      }
+    } else {
+      deliveryMethod='GRAPH FAILED: no token — reconnect Microsoft in CONFIG';
+    }
   }catch(e){
-    try{await navigator.clipboard.writeText(md);}catch{}
+    deliveryMethod='GRAPH ERROR: '+e.message;
+    console.warn('Graph API error:',e);
   }
-  showScreen('screen-sent');
+
+  // Option B: Power Automate webhook
+  if(!sent){
+    const webhookUrl=getWebhook();
+    if(webhookUrl){
+      try{
+        await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});
+        sent=true; deliveryMethod='WEBHOOK ✓';
+      }catch(e){console.warn('Webhook failed:',e);}
+    }
+  }
+
+  // Option C: iOS Share Sheet
+  if(!sent){
+    try{
+      const file=new File([md],filename,{type:'text/plain'});
+      await navigator.share({title:'Raw Signal '+ts,files:[file]});
+      sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
+    }catch(e){
+      try{await navigator.clipboard.writeText(md);}catch{}
+      deliveryMethod='CLIPBOARD — paste manually';
+      alert('Signal copied. Paste into Team-Inbox as '+filename);
+    }
+  }
+
+  showSentScreen(sent, deliveryMethod);
 }
 
 // ════════════════════════════════════════
@@ -1496,4 +1565,3 @@ window.addEventListener('load', async ()=>{
 </script>
 </body>
 </html>
-
