@@ -252,6 +252,16 @@
   .sug-text { font-size: 20px; color: #00cc33; line-height: 1.6; flex: 1; }
   .suggestion-item.checked .sug-text { color: #00FF41; }
   .review-actions { padding: 8px 14px 14px; flex-shrink: 0; border-top: 1px solid #001800; background: rgba(0,0,0,0.6); }
+  .amend-label { font-size: 9px; color: #006600; letter-spacing: 2px; margin-bottom: 5px; }
+  .amend-label::before { content: '> '; color: #00FF41; }
+  .amend-input {
+    width: 100%; background: rgba(0,10,0,0.7); border: 1px solid #003300;
+    border-radius: 6px; padding: 9px 10px; font-size: 14px;
+    font-family: 'Courier New'; color: #00FF41; caret-color: #00FF41;
+    resize: none; min-height: 56px; line-height: 1.5; margin-bottom: 7px;
+  }
+  .amend-input:focus { outline: none; border-color: #00FF41; }
+  .amend-input::placeholder { color: #003300; font-size: 13px; }
 
   /* ══ SCREEN 4 — SENT ══ */
   #screen-sent { background: rgba(0,0,0,0.9); padding: 100px 20px 20px; justify-content: center; align-items: center; }
@@ -549,6 +559,9 @@
       </div>
     </div>
     <div class="review-actions">
+      <div class="amend-label">ADD CONTEXT</div>
+      <textarea class="amend-input" id="amend-input" placeholder="correction or extra detail..."></textarea>
+      <button class="btn btn-green" id="amend-btn" onclick="amendBrief()" style="margin-bottom:8px;">[ UPDATE BRIEF ]</button>
       <button class="btn btn-transmit" onclick="transmitToSource()">[ TRANSMIT TO THE SOURCE ]</button>
       <button class="btn btn-back" onclick="showScreen('screen-write')">&#8592; EDIT TRANSMISSION</button>
     </div>
@@ -1246,6 +1259,29 @@ async function startEncoding(){
 
   renderBrief(briefItems);
   showScreen('screen-review');
+}
+
+// ════════════════════════════════════════
+// AMEND BRIEF — re-run Claude with original + correction
+// ════════════════════════════════════════
+async function amendBrief(){
+  const amendment=document.getElementById('amend-input').value.trim();
+  if(!amendment) return;
+  const raw=document.getElementById('raw-display').textContent;
+  const combined=raw+'\n\n[CORRECTION: '+amendment+']';
+  const btn=document.getElementById('amend-btn');
+  btn.textContent='[ DECODING... ]';
+  btn.disabled=true;
+  try{
+    const result=await callClaude(combined);
+    const parsed=parseClaudeResponse(result);
+    if(parsed){ renderBrief(parsed); document.getElementById('amend-input').value=''; }
+  }catch(err){
+    console.error('Amend error:',err);
+  }finally{
+    btn.textContent='[ UPDATE BRIEF ]';
+    btn.disabled=false;
+  }
 }
 
 // ════════════════════════════════════════
