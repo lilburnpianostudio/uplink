@@ -1156,7 +1156,7 @@ function renderBrief(items){
     div.id='item-'+idx;
     div.innerHTML=`
       <div class="item-header">
-        <div class="matrix-check unchecked" onclick="toggleCheck(${idx})"></div>
+        <div class="matrix-check" onclick="toggleCheck(${idx})">✓</div>
         <div class="agent-tag${isFlag?' flag':''}">&rarr; ${agentDisplay}</div>
       </div>
       <div class="brief-lines">
