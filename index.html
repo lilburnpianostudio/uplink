@@ -233,10 +233,7 @@
   .agent-content .block-label { color: #00FF41; font-size: 16px; letter-spacing: 2px; }
   .brief-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #001800; transition: opacity 0.2s; }
   .brief-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-  .brief-item.excluded { opacity: 0.3; }
   .item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-  .matrix-check { flex-shrink: 0; width: 28px; height: 28px; border: 1px solid #00FF41; border-radius: 3px; background: #001800; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #00FF41; text-shadow: 0 0 6px #00FF41; transition: all 0.15s; }
-  .matrix-check.unchecked { border-color: #003300; color: transparent; background: #000; }
   .agent-tag { display: inline-block; background: #001a00; color: #00FF41; font-size: 18px; font-weight: 700; letter-spacing: 2px; padding: 7px 16px; border-radius: 4px; border: 1px solid #004400; text-shadow: 0 0 5px #00FF41; }
   .agent-tag.flag { color: #ffaa00; border-color: #554400; background: #150f00; text-shadow: 0 0 5px #ffaa00; }
   .brief-lines { margin-top: 10px; }
@@ -314,6 +311,7 @@
       <span id="status-claude" style="color:#555500;">CLAUDE ○</span>
       <span id="sys-time">--:--</span>
       <span id="status-ms" style="color:#555500;">MS ○</span>
+      <span id="outbox-badge" style="display:none;background:#ffaa00;color:#000;font-size:9px;font-weight:700;border-radius:10px;padding:1px 6px;letter-spacing:1px;margin-left:4px;"></span>
     </div>
     <div class="app-title-bar">
       <div>
@@ -380,7 +378,7 @@
 
   <!-- SCREEN 1: WRITE -->
   <div id="screen-write" class="screen">
-    <div class="input-wrap" style="padding:108px 16px 0; flex:1;">
+    <div class="input-wrap" style="padding:0 16px 0; flex:1;">
       <textarea id="user-input" placeholder="" style="min-height:220px;"></textarea>
       <span class="blink-cursor hidden" id="blink-cursor">_</span>
     </div>
@@ -969,8 +967,19 @@ function startDictation() {
     ta.value = t;
     cur.classList.toggle('hidden', t.length > 0);
   };
-  recognition.onerror = () => stopDictation();
-  recognition.onend   = () => { isListening = false; updateHandsetHint(); };
+  recognition.onerror = (e) => {
+    stopDictation();
+    if (e.error === 'not-allowed' || e.error === 'permission-denied') {
+      alert('Microphone access denied.\n\nOn Chrome: click the camera/mic icon in the address bar and allow microphone access, then try again.');
+    } else if (e.error === 'no-speech') {
+      // silent — user just didn't speak
+    } else if (e.error === 'audio-capture') {
+      alert('No microphone detected. Check your mic is connected and try again.');
+    } else {
+      console.warn('Speech error:', e.error);
+    }
+  };
+  recognition.onend = () => { isListening = false; updateHandsetHint(); };
 
   recognition.start();
   isListening = true;
@@ -1156,7 +1165,6 @@ function renderBrief(items){
     div.id='item-'+idx;
     div.innerHTML=`
       <div class="item-header">
-        <div class="matrix-check unchecked" onclick="toggleCheck(${idx})"></div>
         <div class="agent-tag${isFlag?' flag':''}">&rarr; ${agentDisplay}</div>
       </div>
       <div class="brief-lines">
@@ -1185,13 +1193,6 @@ function renderBrief(items){
   });
 }
 
-function toggleCheck(idx){
-  const item=document.getElementById('item-'+idx);
-  const chk=item.querySelector('.matrix-check');
-  const checked=!chk.classList.contains('unchecked');
-  if(checked){chk.classList.add('unchecked');chk.textContent='';item.classList.add('excluded');}
-  else{chk.classList.remove('unchecked');chk.textContent='✓';item.classList.remove('excluded');}
-}
 function toggleSuggestion(el){
   const chk=el.querySelector('.matrix-check');
   if(el.classList.contains('checked')){el.classList.remove('checked');chk.classList.add('unchecked');chk.textContent='';}
@@ -1265,23 +1266,72 @@ async function startEncoding(){
 // AMEND BRIEF — re-run Claude with original + correction
 // ════════════════════════════════════════
 async function amendBrief(){
-  const amendment=document.getElementById('amend-input').value.trim();
-  if(!amendment) return;
+  const inp=document.getElementById('amend-input');
+  const amendment=inp.value.trim();
+  const btn=document.getElementById('amend-btn');
+  if(!amendment){
+    // Flash the field to signal it needs input
+    inp.style.borderColor='#00FF41';
+    inp.focus();
+    setTimeout(()=>{ inp.style.borderColor=''; },800);
+    return;
+  }
   const raw=document.getElementById('raw-display').textContent;
   const combined=raw+'\n\n[CORRECTION: '+amendment+']';
-  const btn=document.getElementById('amend-btn');
   btn.textContent='[ DECODING... ]';
   btn.disabled=true;
   try{
     const result=await callClaude(combined);
     const parsed=parseClaudeResponse(result);
-    if(parsed){ renderBrief(parsed); document.getElementById('amend-input').value=''; }
+    if(parsed){
+      renderBrief(parsed);
+      inp.value='';
+      // Briefly confirm update
+      btn.textContent='[ BRIEF UPDATED ✓ ]';
+      setTimeout(()=>{ btn.textContent='[ UPDATE BRIEF ]'; },1500);
+      // Scroll back to top of brief
+      document.querySelector('.review-scroll').scrollTop=0;
+      return;
+    }
   }catch(err){
+    btn.textContent='[ ERROR — TRY AGAIN ]';
+    setTimeout(()=>{ btn.textContent='[ UPDATE BRIEF ]'; },2000);
     console.error('Amend error:',err);
   }finally{
-    btn.textContent='[ UPDATE BRIEF ]';
     btn.disabled=false;
   }
+}
+
+// ════════════════════════════════════════
+// OUTBOX — persist signals so none are ever lost
+// ════════════════════════════════════════
+function outboxGet(){ try{ return JSON.parse(localStorage.getItem('uplink_outbox')||'[]'); }catch{ return []; } }
+function outboxSave(q){ localStorage.setItem('uplink_outbox', JSON.stringify(q)); }
+function outboxAdd(item){ const q=outboxGet(); q.push(item); outboxSave(q); }
+function outboxRemove(id){ outboxSave(outboxGet().filter(i=>i.id!==id)); }
+function outboxCount(){ return outboxGet().length; }
+
+function outboxUpdateBadge(){
+  const n=outboxCount();
+  const badge=document.getElementById('outbox-badge');
+  if(badge){ badge.textContent=n>0?n:''; badge.style.display=n>0?'flex':'none'; }
+}
+
+async function outboxFlush(){
+  const q=outboxGet();
+  if(!q.length) return;
+  const token=await getMsToken().catch(()=>null);
+  if(!token) return;
+  for(const item of q){
+    try{
+      const resp=await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/root:/PKA-Business/Team-Inbox/${encodeURIComponent(item.filename)}:/content`,
+        {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:item.content}
+      );
+      if(resp.ok){ outboxRemove(item.id); console.log('Outbox delivered:',item.filename); }
+    }catch(e){ console.warn('Outbox retry failed:',e); }
+  }
+  outboxUpdateBadge();
 }
 
 // ════════════════════════════════════════
@@ -1292,20 +1342,17 @@ async function transmitToSource(){
   const ts=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
   const filename=`signal-${currentSender}-${ts}.md`;
 
-  // Collect checked brief items
   const items=[];
-  document.querySelectorAll('.brief-item:not(.excluded)').forEach((el,idx)=>{
+  document.querySelectorAll('.brief-item').forEach((el)=>{
     const vals=el.querySelectorAll('.line-val');
     const agentTag=el.querySelector('.agent-tag').textContent.replace('→','').trim();
     items.push({agent:agentTag,target:vals[0]?.textContent,action:vals[1]?.textContent,status:vals[2]?.textContent,next:vals[3]?.textContent});
   });
 
-  // Collect checked suggestions
   const sugs=[];
   document.querySelectorAll('.suggestion-item.checked .sug-text').forEach(el=>sugs.push('- [x] '+el.textContent));
   document.querySelectorAll('.suggestion-item:not(.checked) .sug-text').forEach(el=>sugs.push('- [ ] '+el.textContent));
 
-  // Build markdown file
   const rawText=document.getElementById('raw-display').textContent;
   let md=`# Signal — ${ts.replace(/-(\d{4})$/,' $1').replace(/-/g,'-')}\n_Source: UPLINK / ${currentSender}_\n\n---\n\n## Decoded Brief\n\n`;
   items.forEach(item=>{
@@ -1317,79 +1364,59 @@ async function transmitToSource(){
 
   document.getElementById('sent-filename').textContent=filename;
 
-  // Try Graph API → webhook → Web Share → clipboard
-  let sent=false, deliveryMethod='UNKNOWN';
+  // Save to outbox FIRST — signal is never lost even if delivery fails
+  const outboxId=Date.now().toString();
+  outboxAdd({id:outboxId, filename, content:md, ts});
+  outboxUpdateBadge();
 
-  // Option A: Graph API (best — direct to Team-Inbox)
+  // Attempt Graph API delivery
+  let delivered=false;
   try{
     const token=await getMsToken();
     if(token){
-      const graphResp=await fetch(
+      const resp=await fetch(
         `https://graph.microsoft.com/v1.0/me/drive/root:/PKA-Business/Team-Inbox/${encodeURIComponent(filename)}:/content`,
         {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:md}
       );
-      if(graphResp.ok){
-        sent=true;
-        deliveryMethod='ONEDRIVE DIRECT ✓';
-      } else {
-        const errBody=await graphResp.json().catch(()=>({}));
-        deliveryMethod='GRAPH FAILED: '+graphResp.status+' — '+(errBody.error?.message||'unknown');
-        console.warn('Graph API failed:',graphResp.status, errBody);
-      }
+      if(resp.ok){ delivered=true; outboxRemove(outboxId); outboxUpdateBadge(); }
+      else{ console.warn('Graph failed:',resp.status); }
     }
-  }catch(e){
-    deliveryMethod='GRAPH ERROR: '+e.message;
-    console.warn('Graph API error:',e);
-  }
+  }catch(e){ console.warn('Graph error:',e); }
 
-  // Option B: Power Automate webhook
-  if(!sent){
+  // Fallback: webhook
+  if(!delivered){
     const webhookUrl=getWebhook();
     if(webhookUrl){
       try{
-        await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});
-        sent=true; deliveryMethod='WEBHOOK ✓';
+        const resp=await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});
+        if(resp.ok){ delivered=true; outboxRemove(outboxId); outboxUpdateBadge(); }
       }catch(e){console.warn('Webhook failed:',e);}
     }
   }
 
-  // Option C: iOS Share Sheet
-  if(!sent){
-    try{
-      const file=new File([md],filename,{type:'text/plain'});
-      await navigator.share({title:'Signal '+ts,files:[file]});
-      sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
-    }catch(e){
-      try{await navigator.clipboard.writeText(md);}catch{}
-      deliveryMethod='CLIPBOARD — paste manually';
-      alert('Brief copied. Paste into Team-Inbox as '+filename);
-    }
-  }
-
-  showSentScreen(sent, deliveryMethod);
+  showSentScreen(delivered, filename);
 }
 
-function showSentScreen(success, method){
+function showSentScreen(delivered, filename){
   const titleEl=document.getElementById('sent-title');
   const subtitleEl=document.getElementById('sent-subtitle');
   const deliveryEl=document.getElementById('sent-delivery');
-  const confirmed=success&&(method.includes('ONEDRIVE')||method.includes('WEBHOOK'));
-  if(confirmed){
+  if(delivered){
     titleEl.textContent='SIGNAL TRANSMITTED';
-    titleEl.style.color='';
-    titleEl.style.textShadow='';
+    titleEl.style.color=''; titleEl.style.textShadow='';
     subtitleEl.textContent='MESSAGE RECEIVED. STAND BY.';
     subtitleEl.style.color='#005500';
     deliveryEl.style.color='#00FF41';
+    deliveryEl.textContent='ONEDRIVE DIRECT ✓';
   } else {
-    titleEl.textContent='⚠ DELIVERY FAILED';
-    titleEl.style.color='#ff4400';
-    titleEl.style.textShadow='0 0 14px #ff4400';
-    subtitleEl.textContent='GO TO CONFIG → RECONNECT MICROSOFT';
-    subtitleEl.style.color='#ff4400';
-    deliveryEl.style.color='#ff6600';
+    titleEl.textContent='QUEUED — WILL RETRY';
+    titleEl.style.color='#ffaa00';
+    titleEl.style.textShadow='0 0 14px #ffaa00';
+    subtitleEl.textContent='SIGNAL SAVED LOCALLY. RECONNECT MICROSOFT TO DELIVER.';
+    subtitleEl.style.color='#886600';
+    deliveryEl.style.color='#ffaa00';
+    deliveryEl.textContent='PENDING — '+filename;
   }
-  deliveryEl.textContent=method;
   showScreen('screen-sent');
 }
 
@@ -1515,6 +1542,8 @@ async function handleMsCallback(){
         localStorage.setItem('ms_user',pl.preferred_username||pl.email||'connected');
       }catch{}
       localStorage.removeItem('ms_v');localStorage.removeItem('ms_s');
+      // Flush any queued signals now that we have a fresh token
+      setTimeout(()=>outboxFlush(), 1000);
       return true;
     }
   }catch(e){console.error('Token exchange error:',e);}
@@ -1588,6 +1617,9 @@ window.addEventListener('load', async ()=>{
   }
   updateSenderDisplay();
   updateStatusBar();
+  outboxUpdateBadge();
+  // Flush any queued signals if token is available
+  setTimeout(()=>outboxFlush(), 2000);
   if(!localStorage.getItem('uplink_setup_done')){
     showScreen('screen-setup');
   } else {
