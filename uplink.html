@@ -1265,21 +1265,38 @@ async function startEncoding(){
 // AMEND BRIEF — re-run Claude with original + correction
 // ════════════════════════════════════════
 async function amendBrief(){
-  const amendment=document.getElementById('amend-input').value.trim();
-  if(!amendment) return;
+  const inp=document.getElementById('amend-input');
+  const amendment=inp.value.trim();
+  const btn=document.getElementById('amend-btn');
+  if(!amendment){
+    // Flash the field to signal it needs input
+    inp.style.borderColor='#00FF41';
+    inp.focus();
+    setTimeout(()=>{ inp.style.borderColor=''; },800);
+    return;
+  }
   const raw=document.getElementById('raw-display').textContent;
   const combined=raw+'\n\n[CORRECTION: '+amendment+']';
-  const btn=document.getElementById('amend-btn');
   btn.textContent='[ DECODING... ]';
   btn.disabled=true;
   try{
     const result=await callClaude(combined);
     const parsed=parseClaudeResponse(result);
-    if(parsed){ renderBrief(parsed); document.getElementById('amend-input').value=''; }
+    if(parsed){
+      renderBrief(parsed);
+      inp.value='';
+      // Briefly confirm update
+      btn.textContent='[ BRIEF UPDATED ✓ ]';
+      setTimeout(()=>{ btn.textContent='[ UPDATE BRIEF ]'; },1500);
+      // Scroll back to top of brief
+      document.querySelector('.review-scroll').scrollTop=0;
+      return;
+    }
   }catch(err){
+    btn.textContent='[ ERROR — TRY AGAIN ]';
+    setTimeout(()=>{ btn.textContent='[ UPDATE BRIEF ]'; },2000);
     console.error('Amend error:',err);
   }finally{
-    btn.textContent='[ UPDATE BRIEF ]';
     btn.disabled=false;
   }
 }
