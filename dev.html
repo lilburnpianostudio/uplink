@@ -378,7 +378,7 @@
 
   <!-- SCREEN 1: WRITE -->
   <div id="screen-write" class="screen">
-    <div class="input-wrap" style="padding:108px 16px 0; flex:1;">
+    <div class="input-wrap" style="padding:0 16px 0; flex:1;">
       <textarea id="user-input" placeholder="" style="min-height:220px;"></textarea>
       <span class="blink-cursor hidden" id="blink-cursor">_</span>
     </div>
@@ -967,8 +967,19 @@ function startDictation() {
     ta.value = t;
     cur.classList.toggle('hidden', t.length > 0);
   };
-  recognition.onerror = () => stopDictation();
-  recognition.onend   = () => { isListening = false; updateHandsetHint(); };
+  recognition.onerror = (e) => {
+    stopDictation();
+    if (e.error === 'not-allowed' || e.error === 'permission-denied') {
+      alert('Microphone access denied.\n\nOn Chrome: click the camera/mic icon in the address bar and allow microphone access, then try again.');
+    } else if (e.error === 'no-speech') {
+      // silent — user just didn't speak
+    } else if (e.error === 'audio-capture') {
+      alert('No microphone detected. Check your mic is connected and try again.');
+    } else {
+      console.warn('Speech error:', e.error);
+    }
+  };
+  recognition.onend = () => { isListening = false; updateHandsetHint(); };
 
   recognition.start();
   isListening = true;
