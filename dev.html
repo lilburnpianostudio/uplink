@@ -233,10 +233,7 @@
   .agent-content .block-label { color: #00FF41; font-size: 16px; letter-spacing: 2px; }
   .brief-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #001800; transition: opacity 0.2s; }
   .brief-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-  .brief-item.excluded { opacity: 0.3; }
   .item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-  .matrix-check { flex-shrink: 0; width: 28px; height: 28px; border: 1px solid #00FF41; border-radius: 3px; background: #001800; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #00FF41; text-shadow: 0 0 6px #00FF41; transition: all 0.15s; }
-  .matrix-check.unchecked { border-color: #003300; color: transparent; background: #000; }
   .agent-tag { display: inline-block; background: #001a00; color: #00FF41; font-size: 18px; font-weight: 700; letter-spacing: 2px; padding: 7px 16px; border-radius: 4px; border: 1px solid #004400; text-shadow: 0 0 5px #00FF41; }
   .agent-tag.flag { color: #ffaa00; border-color: #554400; background: #150f00; text-shadow: 0 0 5px #ffaa00; }
   .brief-lines { margin-top: 10px; }
@@ -1156,7 +1153,6 @@ function renderBrief(items){
     div.id='item-'+idx;
     div.innerHTML=`
       <div class="item-header">
-        <div class="matrix-check" onclick="toggleCheck(${idx})">✓</div>
         <div class="agent-tag${isFlag?' flag':''}">&rarr; ${agentDisplay}</div>
       </div>
       <div class="brief-lines">
@@ -1185,13 +1181,6 @@ function renderBrief(items){
   });
 }
 
-function toggleCheck(idx){
-  const item=document.getElementById('item-'+idx);
-  const chk=item.querySelector('.matrix-check');
-  const checked=!chk.classList.contains('unchecked');
-  if(checked){chk.classList.add('unchecked');chk.textContent='';item.classList.add('excluded');}
-  else{chk.classList.remove('unchecked');chk.textContent='✓';item.classList.remove('excluded');}
-}
 function toggleSuggestion(el){
   const chk=el.querySelector('.matrix-check');
   if(el.classList.contains('checked')){el.classList.remove('checked');chk.classList.add('unchecked');chk.textContent='';}
@@ -1311,7 +1300,7 @@ async function transmitToSource(){
 
   // Collect checked brief items
   const items=[];
-  document.querySelectorAll('.brief-item:not(.excluded)').forEach((el,idx)=>{
+  document.querySelectorAll('.brief-item').forEach((el,idx)=>{
     const vals=el.querySelectorAll('.line-val');
     const agentTag=el.querySelector('.agent-tag').textContent.replace('→','').trim();
     items.push({agent:agentTag,target:vals[0]?.textContent,action:vals[1]?.textContent,status:vals[2]?.textContent,next:vals[3]?.textContent});
