@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="UPLINK">
+<link rel="apple-touch-icon" href="uplink-icon.png">
+<link rel="icon" href="uplink-icon.png">
+<title>UPLINK</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: #000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    overflow-x: hidden;
+  }
+
+  /* ── Phone shell (desktop preview) ── */
+  .phone {
+    width: 375px;
+    max-width: 100%;
+    height: 780px;
+    background: #000;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 1.5px #004400, 0 0 30px rgba(0,255,65,0.3), 0 0 80px rgba(0,255,65,0.1), 0 40px 100px rgba(0,0,0,0.95);
+  }
+
+  /* On actual mobile, fill the screen */
+  @media (max-width: 420px) {
+    body { padding: 0; }
+    .phone { width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; }
+  }
+
+  #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+  /* ── Intro overlay ── */
+  #intro-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 100; display: none; flex-direction: column;
+    justify-content: flex-start; align-items: flex-start;
+    padding: 116px 24px 0;
+    background: rgba(0,0,0,0.0);
+    transition: opacity 1s ease;
+    cursor: none;
+  }
+  #intro-overlay.fading { opacity: 0; pointer-events: none; }
+  #intro-msg {
+    font-size: 15px; color: #00FF41; letter-spacing: 2px;
+    text-shadow: 0 0 14px #00FF41, 0 0 28px rgba(0,255,65,0.35);
+    min-height: 22px; line-height: 1.5;
+  }
+  #intro-msg .tw-cursor { color: #00FF41; animation: blink 0.7s step-end infinite; }
+
+  /* ── Header ── */
+  .sys-header {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 150;
+    background: rgba(0,0,0,0.9); border-bottom: 1px solid #003300;
+  }
+  .status-bar {
+    padding: 10px 22px 5px; display: flex; justify-content: space-between;
+    font-size: 10px; color: #00aa2a; letter-spacing: 1px;
+  }
+  .app-title-bar { padding: 8px 20px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .app-title-bar h1 { font-size: 24px; font-weight: 700; color: #00FF41; letter-spacing: 6px; text-shadow: 0 0 14px #00FF41, 0 0 28px rgba(0,255,65,0.4); }
+  .app-title-bar p { font-size: 9px; color: #005500; letter-spacing: 3px; margin-top: 2px; }
+
+  /* ── Bullet hamburger menu ── */
+  .menu-btn {
+    background: none; border: none; cursor: pointer; padding: 6px;
+    display: flex; flex-direction: column; gap: 5px; align-items: flex-end;
+  }
+  .bullet-line {
+    display: flex; align-items: center; gap: 0;
+    filter: drop-shadow(0 0 3px #00FF41);
+  }
+  .menu-dropdown {
+    position: absolute; top: 88px; right: 14px; z-index: 300;
+    background: rgba(0,0,0,0.96); border: 1px solid #004400;
+    border-radius: 8px; overflow: hidden; display: none; min-width: 140px;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-item {
+    padding: 14px 18px; font-size: 12px; color: #009922;
+    letter-spacing: 2px; cursor: pointer; border-bottom: 1px solid #002200;
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Courier New'; transition: background 0.15s;
+  }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item:hover { background: rgba(0,255,65,0.06); color: #00FF41; }
+  .menu-item .mi-icon { font-size: 14px; }
+  /* Help panel */
+  #help-panel {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 200; background: rgba(0,0,0,0.96);
+    display: none; flex-direction: column; padding: 100px 20px 20px;
+    overflow-y: auto;
+  }
+  #help-panel.active { display: flex; }
+  .help-section { margin-bottom: 20px; }
+  .help-section-title { font-size: 10px; color: #00FF41; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #002200; padding-bottom: 6px; }
+  .help-agent { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #001800; }
+  .help-agent:last-child { border-bottom: none; }
+  .help-agent-name { font-size: 13px; font-weight: 700; color: #00FF41; min-width: 60px; }
+  .help-agent-desc { font-size: 12px; color: #009922; line-height: 1.5; flex: 1; }
+  .help-rule { font-size: 12px; color: #009922; line-height: 1.7; padding: 4px 0; }
+  .help-rule::before { content: '> '; color: #00FF41; }
+
+  /* ── Screens ── */
+  .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; display: none; flex-direction: column; padding-top: 100px; }
+  .screen.active { display: flex; }
+
+  /* ══ SCREEN 0 — SETUP ══ */
+  #screen-setup {
+    background: rgba(0,0,0,0.92); padding: 100px 20px 20px;
+    justify-content: flex-start; gap: 0;
+  }
+  .setup-title { font-size: 11px; color: #00FF41; letter-spacing: 3px; margin-bottom: 20px; text-shadow: 0 0 8px #00FF41; }
+  .setup-title::before { content: '> '; }
+  .setup-field { margin-bottom: 18px; }
+  .setup-label { font-size: 9px; color: #006600; letter-spacing: 2px; margin-bottom: 6px; }
+  .setup-label::before { content: '> '; color: #00FF41; }
+  .setup-input {
+    width: 100%; background: rgba(0,10,0,0.8); border: 1px solid #004400;
+    border-radius: 6px; padding: 12px; font-size: 16px;
+    font-family: 'Courier New'; color: #00FF41; caret-color: #00FF41;
+    letter-spacing: 1px; touch-action: manipulation;
+  }
+  .setup-input:focus { outline: none; border-color: #00FF41; }
+  .setup-input::placeholder { color: #003300; }
+  .setup-note { font-size: 9px; color: #005500; letter-spacing: 1px; line-height: 1.6; margin-top: 4px; }
+  .setup-divider { border: none; border-top: 1px solid #002200; margin: 16px 0; }
+  .webhook-section { margin-bottom: 18px; }
+  .webhook-steps { font-size: 9px; color: #005500; line-height: 1.8; letter-spacing: 0.5px; }
+  .webhook-steps span { color: #009922; }
+
+  /* ══ SCREEN 1 — WRITE ══ */
+  #screen-write { padding: 100px 16px 14px; background: rgba(0,0,0,0.72); }
+  .terminal-label { font-size: 13px; color: #00cc33; letter-spacing: 2px; margin-bottom: 9px; }
+  .terminal-label::before { content: '> '; color: #00FF41; }
+  .input-wrap { position: relative; flex: 1; display: flex; flex-direction: column; }
+  textarea {
+    width: 100%; flex: 1; min-height: 200px; background: transparent;
+    border: none; padding: 12px 4px; font-size: 20px;
+    font-family: 'Courier New'; color: #00FF41; line-height: 1.65;
+    resize: none; caret-color: transparent; box-shadow: none; cursor: none;
+  }
+  textarea::placeholder { color: #003300; font-size: 18px; }
+  textarea:focus { outline: none; }
+  .blink-cursor {
+    position: absolute; top: 12px; left: 4px; font-size: 15px;
+    color: #00FF41; text-shadow: 0 0 8px #00FF41;
+    animation: blink 1s step-end infinite;
+    pointer-events: none; font-family: 'Courier New'; line-height: 1;
+  }
+  .blink-cursor.hidden { display: none; }
+  .mic-hint { font-size: 9px; color: #004a00; letter-spacing: 2px; margin: 6px 0 10px; text-align: center; }
+
+  /* ── Rotary Handset ── */
+  .handset-container {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 4px 0 8px;
+  }
+  .handset-wrap {
+    position: relative; cursor: pointer;
+    filter: drop-shadow(0 0 8px rgba(0,255,65,0.4));
+    transition: filter 0.2s;
+  }
+  .handset-wrap.listening {
+    filter: drop-shadow(0 0 20px #00FF41) drop-shadow(0 0 50px rgba(0,255,65,0.8));
+    animation: listen-pulse 0.8s ease-in-out infinite;
+  }
+  .handset-hint {
+    font-size: 10px; color: #006600; letter-spacing: 2px; text-align: center;
+    transition: color 0.3s;
+  }
+  .handset-hint.active { color: #00FF41; text-shadow: 0 0 6px #00FF41; }
+  @keyframes listen-pulse {
+    0%,100% { filter: drop-shadow(0 0 16px #00FF41) drop-shadow(0 0 40px rgba(0,255,65,0.7)); }
+    50%      { filter: drop-shadow(0 0 28px #00FF41) drop-shadow(0 0 60px rgba(0,255,65,0.9)); }
+  }
+
+  /* ── Cradle phone (Screen 4) ── */
+  .cradle-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    cursor: pointer;
+    filter: drop-shadow(0 0 14px #00FF41) drop-shadow(0 0 30px rgba(0,255,65,0.35));
+    transition: filter 0.2s;
+  }
+  .cradle-wrap:active { filter: drop-shadow(0 0 24px #00FF41) drop-shadow(0 0 50px rgba(0,255,65,0.7)); }
+  .pickup-hint {
+    font-size: 11px; color: #009922; letter-spacing: 3px; text-align: center;
+    animation: blink 1.8s step-end infinite;
+  }
+
+  /* Sender auto-set from login — no UI needed */
+
+  /* ══ SCREEN 2 — PROCESSING ══ */
+  #screen-matrix-full { background: transparent; z-index: 15; padding-top: 0; justify-content: center; align-items: center; }
+  .matrix-takeover { text-align: center; padding: 20px; z-index: 20; position: relative; }
+  .signal-intercepted { font-size: 17px; font-weight: 700; color: #00FF41; letter-spacing: 4px; text-shadow: 0 0 18px #00FF41, 0 0 40px #00FF41; animation: glow-pulse 1.4s ease-in-out infinite; margin-bottom: 26px; }
+  #terminal-lines { text-align: left; display: inline-block; min-width: 260px; }
+  .t-line { font-size: 13px; color: #009922; letter-spacing: 1px; line-height: 2; opacity: 0; transition: opacity 0.3s; }
+  .t-line.visible { opacity: 1; }
+  .t-line.bright { color: #00FF41; text-shadow: 0 0 5px #00FF41; }
+  .blk-cursor { font-size: 18px; color: #00FF41; animation: blink 0.8s step-end infinite; margin-top: 14px; display: block; }
+  #claude-status { font-size: 10px; color: #00aa2a; letter-spacing: 2px; margin-top: 14px; opacity: 0; transition: opacity 0.4s; }
+  #claude-status.visible { opacity: 1; }
+
+  /* ══ SCREEN 3 — REVIEW ══ */
+  #screen-review { background: rgba(0,0,0,0.86); padding: 100px 0 0; overflow: hidden; }
+  .review-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 8px; scrollbar-width: none; }
+  .review-scroll::-webkit-scrollbar { display: none; }
+  .raw-block { border: 1px solid #001f00; border-radius: 6px; padding: 9px 12px; margin-bottom: 12px; background: rgba(0,5,0,0.5); }
+  .block-label { font-size: 16px; letter-spacing: 2px; color: #00cc33; margin-bottom: 10px; text-transform: uppercase; }
+  .raw-text { font-size: 15px; color: #009922; line-height: 1.6; font-style: italic; }
+  .agent-section { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; padding: 16px 14px; border: 1px solid #003a00; border-radius: 8px; background: rgba(0,12,0,0.72); box-shadow: 0 0 14px rgba(0,255,65,0.06); }
+  .hacker-icon { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; padding-top: 2px; }
+  .hacker-svg-wrap { filter: drop-shadow(0 0 7px #00FF41) drop-shadow(0 0 14px rgba(0,255,65,0.35)); }
+  .icon-label { font-size: 12px; color: #00FF41; letter-spacing: 2px; text-shadow: 0 0 6px #00FF41; font-weight: 700; }
+  .icon-status { font-size: 7px; color: #00aa2a; letter-spacing: 1px; animation: blink 2.2s step-end infinite; }
+  .agent-content { flex: 1; min-width: 0; }
+  .agent-content .block-label { color: #00FF41; font-size: 16px; letter-spacing: 2px; }
+  .brief-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #001800; transition: opacity 0.2s; }
+  .brief-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .brief-item.excluded { opacity: 0.3; }
+  .item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .matrix-check { flex-shrink: 0; width: 28px; height: 28px; border: 1px solid #00FF41; border-radius: 3px; background: #001800; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #00FF41; text-shadow: 0 0 6px #00FF41; transition: all 0.15s; }
+  .matrix-check.unchecked { border-color: #003300; color: transparent; background: #000; }
+  .agent-tag { display: inline-block; background: #001a00; color: #00FF41; font-size: 18px; font-weight: 700; letter-spacing: 2px; padding: 7px 16px; border-radius: 4px; border: 1px solid #004400; text-shadow: 0 0 5px #00FF41; }
+  .agent-tag.flag { color: #ffaa00; border-color: #554400; background: #150f00; text-shadow: 0 0 5px #ffaa00; }
+  .brief-lines { margin-top: 10px; }
+  .brief-line { display: flex; gap: 10px; font-size: 18px; line-height: 2; }
+  .line-key { color: #00aa2a; font-size: 18px; letter-spacing: 1px; flex-shrink: 0; padding-top: 1px; min-width: 78px; font-weight: 700; }
+  .line-val { color: #00FF41; font-size: 20px; flex: 1; line-height: 1.7; border-bottom: 1px dashed transparent; outline: none; min-width: 0; word-break: break-word; }
+  .line-val:focus { border-bottom-color: #004400; color: #00FF41; caret-color: #00FF41; }
+  .suggestions-block { border: 1px solid #002800; border-radius: 8px; padding: 14px; background: rgba(0,8,0,0.6); margin-bottom: 12px; }
+  .suggestions-block .block-label { color: #009922; margin-bottom: 10px; }
+  .suggestion-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #001500; cursor: pointer; }
+  .suggestion-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .suggestion-item:first-child { padding-top: 0; }
+  .sug-text { font-size: 20px; color: #00cc33; line-height: 1.6; flex: 1; }
+  .suggestion-item.checked .sug-text { color: #00FF41; }
+  .review-actions { padding: 8px 14px 14px; flex-shrink: 0; border-top: 1px solid #001800; background: rgba(0,0,0,0.6); }
+
+  /* ══ SCREEN 4 — SENT ══ */
+  #screen-sent { background: rgba(0,0,0,0.9); padding: 100px 20px 20px; justify-content: center; align-items: center; }
+  .sent-symbol { font-size: 52px; text-align: center; filter: drop-shadow(0 0 18px #00FF41); margin-bottom: 14px; animation: glow-pulse 2s ease-in-out infinite; }
+  .sent-title { font-size: 13px; font-weight: 700; color: #00FF41; letter-spacing: 5px; text-align: center; text-shadow: 0 0 14px #00FF41; margin-bottom: 3px; }
+  .sent-sub { font-size: 9px; color: #005500; letter-spacing: 4px; text-align: center; margin-bottom: 26px; }
+  .terminal-box { width: 100%; background: rgba(0,6,0,0.85); border: 1px solid #003300; border-radius: 8px; padding: 14px; margin-bottom: 22px; }
+  .t-row { font-size: 13px; color: #009922; line-height: 2; letter-spacing: 0.5px; }
+  .t-row span { color: #00FF41; }
+  .t-row.dim { color: #004400; }
+
+  /* ══ SETTINGS PANEL ══ */
+  #settings-panel {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 200; background: rgba(0,0,0,0.96);
+    display: none; flex-direction: column; padding: 100px 20px 20px;
+    overflow-y: auto;
+  }
+  #settings-panel.active { display: flex; }
+
+  /* ── Buttons ── */
+  .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; font-size: 12px; font-family: 'Courier New'; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: all 0.15s; text-transform: uppercase; display: block; }
+  .btn:active { transform: scale(0.97); }
+  .btn-transmit { background: transparent; color: #ff4400; border: 2px solid #ff4400; box-shadow: 0 0 18px rgba(255,68,0,0.45), inset 0 0 18px rgba(255,68,0,0.07); text-shadow: 0 0 10px #ff4400; font-size: 13px; padding: 17px; }
+  .btn-transmit:hover { background: rgba(255,68,0,0.08); }
+  .btn-back { background: transparent; color: #005500; border: 1px solid #003300; font-size: 10px; letter-spacing: 2px; margin-top: 8px; padding: 11px; }
+  .btn-back:hover { color: #009922; border-color: #005500; }
+  .btn-green { background: transparent; color: #00FF41; border: 1px solid #00FF41; box-shadow: 0 0 14px rgba(0,255,65,0.28); text-shadow: 0 0 7px #00FF41; font-size: 12px; }
+  .btn-green:hover { background: rgba(0,255,65,0.07); }
+
+  /* ── Animations ── */
+  @keyframes blink      { 0%,100%{opacity:1;} 50%{opacity:0;} }
+  @keyframes glow-pulse { 0%,100%{opacity:1;text-shadow:0 0 18px #00FF41,0 0 40px #00FF41;} 50%{opacity:0.6;text-shadow:0 0 8px #00FF41;} }
+  @keyframes icon-pulse { 0%,100%{filter:drop-shadow(0 0 10px #00FF41) drop-shadow(0 0 24px rgba(0,255,65,0.5));} 50%{filter:drop-shadow(0 0 20px #00FF41) drop-shadow(0 0 44px rgba(0,255,65,0.8));} }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <canvas id="matrix-canvas"></canvas>
+
+  <!-- Intro overlay -->
+  <div id="intro-overlay" onclick="skipIntro()">
+    <div id="intro-msg"></div>
+  </div>
+
+  <!-- Header -->
+  <div class="sys-header" id="sys-header">
+    <div class="status-bar">
+      <span id="status-claude" style="color:#555500;">CLAUDE ○</span>
+      <span id="sys-time">--:--</span>
+      <span id="status-ms" style="color:#555500;">MS ○</span>
+    </div>
+    <div class="app-title-bar">
+      <div>
+        <h1>⬡ UPLINK</h1>
+        <p>// NEBUCHADNEZZAR //</p>
+      </div>
+      <!-- Bullet hamburger menu — sideways shell = death defeated -->
+      <button class="menu-btn" onclick="event.stopPropagation();toggleMenu()">
+        <!-- Three sideways bullets -->
+        <svg width="38" height="16" viewBox="0 0 38 16" fill="none">
+          <!-- Bullet — clean profile, pointing right -->
+          <!-- Casing -->
+          <rect x="1" y="4" width="18" height="8" rx="1.5"
+            stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.1)"/>
+          <!-- Primer circle -->
+          <circle cx="5" cy="8" r="2.2" stroke="#00FF41" stroke-width="0.8" fill="none" opacity="0.7"/>
+          <!-- Crimp -->
+          <line x1="19" y1="4" x2="19" y2="12" stroke="#00FF41" stroke-width="1" opacity="0.6"/>
+          <!-- Bullet nose -->
+          <path d="M 19,4 L 30,4 Q 37,6 37,8 Q 37,10 30,12 L 19,12 Z"
+            stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.18)"/>
+          <!-- Tip glow -->
+          <circle cx="36" cy="8" r="2" fill="#00FF41" opacity="0.9"/>
+        </svg>
+      </button>
+      <!-- Dropdown -->
+      <div id="menu-dropdown" class="menu-dropdown">
+        <div class="menu-item" onclick="toggleMenu();toggleHelp()"><span class="mi-icon">⬡</span>ABOUT</div>
+        <div class="menu-item" onclick="toggleMenu();toggleSettings()"><span class="mi-icon">⚙</span>CONFIG</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 0: SETUP -->
+  <div id="screen-setup" class="screen">
+    <div class="setup-title">FIRST CONTACT PROTOCOL</div>
+
+    <div class="setup-field">
+      <div class="setup-label">AGENT KEY (ANTHROPIC API)</div>
+      <input type="password" class="setup-input" id="setup-api-key"
+        placeholder="sk-ant-api03-..." autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <div class="setup-note">stored only on this device · never transmitted elsewhere</div>
+    </div>
+
+    <hr class="setup-divider"/>
+
+    <div class="webhook-section">
+      <div class="setup-label">MOTHERSHIP URL (POWER AUTOMATE)</div>
+      <input type="text" class="setup-input" id="setup-webhook"
+        placeholder="https://prod-xx.westus.logic.azure.com/..." autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <div class="setup-note" style="margin-bottom:10px;">optional — enables one-tap file delivery to Team-Inbox</div>
+      <div class="webhook-steps">
+        to create: <span>flow.microsoft.com</span> → new flow →<br>
+        trigger: <span>when http request received</span> →<br>
+        action: <span>create file in SharePoint</span> →<br>
+        site: <span>lilburnpianostudio</span> · folder: <span>Team-Inbox</span><br>
+        paste the generated url above
+      </div>
+    </div>
+
+    <hr class="setup-divider"/>
+    <button class="btn btn-green" onclick="saveSetup()">[ INITIALIZE UPLINK ]</button>
+  </div>
+
+  <!-- SCREEN 1: WRITE -->
+  <div id="screen-write" class="screen">
+    <div class="input-wrap" style="padding:108px 16px 0; flex:1;">
+      <textarea id="user-input" placeholder="" style="min-height:220px;"></textarea>
+      <span class="blink-cursor hidden" id="blink-cursor">_</span>
+    </div>
+    <span id="sender-display" style="display:none;"></span>
+
+    <!-- Horizontal handset — lays in bottom corner, picked up at slight angle -->
+    <div style="position:absolute; bottom:20px; right:14px; z-index:15;">
+      <div class="handset-wrap" id="handset-wrap"
+        style="transform: rotate(-15deg); transform-origin: right bottom;"
+          ontouchstart="handsetTouchStart(event)"
+          ontouchend="handsetTouchEnd(event)"
+          onmousedown="handsetTouchStart(event)"
+          onmouseup="handsetTouchEnd(event)">
+          <svg width="160" height="86" viewBox="0 0 160 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="hbody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="#00FF41" stop-opacity="0.14"/>
+                <stop offset="35%"  stop-color="#003a00"/>
+                <stop offset="100%" stop-color="#001000"/>
+              </linearGradient>
+            </defs>
+
+            <!-- ═══ HORIZONTAL HANDSET BODY — true banana phone shape ═══ -->
+            <!-- Shadow layer -->
+            <path d="M 24,6 C 10,6 4,14 4,31 C 4,48 10,56 24,56
+              C 36,56 44,52 56,51 C 68,50 82,50 94,51
+              C 106,52 116,56 136,56 C 150,56 156,48 156,31
+              C 156,14 150,6 136,6 C 116,6 106,10 94,11
+              C 82,12 68,12 56,11 C 44,10 36,6 24,6 Z"
+              fill="#000d00" transform="translate(2,2)" opacity="0.4"/>
+            <!-- Main body — banana handset outline -->
+            <path d="M 24,6 C 10,6 4,14 4,31 C 4,48 10,56 24,56
+              C 36,56 44,52 56,51 C 68,50 82,50 94,51
+              C 106,52 116,56 136,56 C 150,56 156,48 156,31
+              C 156,14 150,6 136,6 C 116,6 106,10 94,11
+              C 82,12 68,12 56,11 C 44,10 36,6 24,6 Z"
+              stroke="#00FF41" stroke-width="1.5" fill="url(#hbody)"/>
+            <!-- Top specular highlight -->
+            <path d="M 26,7 C 14,7 6,13 6,22 C 8,18 14,8 26,8 C 38,8 46,11 58,12"
+              stroke="#00FF41" stroke-width="0.8" fill="none" opacity="0.2"/>
+            <!-- Divider lines separating cups from handle -->
+            <line x1="52" y1="9"  x2="52" y2="53" stroke="#00FF41" stroke-width="0.8" opacity="0.25"/>
+            <line x1="108" y1="9" x2="108" y2="53" stroke="#00FF41" stroke-width="0.8" opacity="0.25"/>
+
+            <!-- ═══ EARPIECE (left cup) — tap to SEND ═══ -->
+            <circle cx="26" cy="31" r="18" stroke="#00FF41" stroke-width="1" fill="#001a00" opacity="0.9"/>
+            <circle cx="26" cy="31" r="13" stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.5"/>
+            <circle cx="26" cy="18" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="36" cy="24" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="36" cy="38" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="26" cy="44" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="16" cy="38" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="16" cy="24" r="2.2" fill="#00FF41" opacity="0.8"/>
+            <circle cx="26" cy="31" r="2.2" fill="#00FF41" opacity="0.65"/>
+            <circle cx="26" cy="31" r="1"   fill="#000"/>
+            <circle cx="26" cy="31" r="21" fill="none" stroke="#00FF41" stroke-width="0.5" opacity="0.22">
+              <animate attributeName="opacity" values="0.22;0.55;0.22" dur="3.2s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- ═══ HANDLE — grip texture ═══ -->
+            <line x1="74" y1="17" x2="74" y2="45" stroke="#00FF41" stroke-width="0.5" opacity="0.15"/>
+            <line x1="80" y1="15" x2="80" y2="47" stroke="#00FF41" stroke-width="0.4" opacity="0.12"/>
+            <line x1="86" y1="15" x2="86" y2="47" stroke="#00FF41" stroke-width="0.4" opacity="0.12"/>
+
+            <!-- ═══ MOUTHPIECE (right cup) — 726 — tap to SPEAK, cord exits here ═══ -->
+            <circle cx="134" cy="31" r="18" stroke="#00FF41" stroke-width="1.3" fill="#001a00" opacity="0.95"/>
+            <circle cx="134" cy="31" r="13" stroke="#00FF41" stroke-width="0.9" fill="none" opacity="0.55"/>
+            <circle cx="134" cy="31" r="8"  stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.4"/>
+            <circle cx="134" cy="31" r="2.2" fill="#00FF41" opacity="0.9"/>
+            <circle cx="134" cy="31" r="1"   fill="#000"/>
+            <!-- 7 outer -->
+            <circle cx="134" cy="14" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="147" cy="20" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="151" cy="31" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="147" cy="42" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="134" cy="48" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="121" cy="42" r="2"   fill="#00FF41" opacity="0.88"/>
+            <circle cx="117" cy="31" r="2"   fill="#00FF41" opacity="0.88"/>
+            <!-- 2 middle -->
+            <circle cx="134" cy="19" r="1.4" fill="#00FF41" opacity="0.7"/>
+            <circle cx="134" cy="43" r="1.4" fill="#00FF41" opacity="0.7"/>
+            <!-- 6 inner hexagon -->
+            <circle cx="134" cy="24" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="140" cy="27" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="140" cy="35" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="134" cy="38" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="128" cy="35" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <circle cx="128" cy="27" r="1.2" fill="#00FF41" opacity="0.6"/>
+            <!-- Mouthpiece glow rings -->
+            <circle id="mouth-glow" cx="134" cy="31" r="21" fill="none" stroke="#00FF41" stroke-width="0.6" opacity="0.35">
+              <animate attributeName="opacity" values="0.35;0.75;0.35" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle id="mouth-active" cx="134" cy="31" r="25" fill="none" stroke="#00FF41" stroke-width="2.5" opacity="0" stroke-dasharray="5 3">
+              <animate attributeName="opacity" values="0;1;0" dur="0.5s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- ═══ CORD — exits right (mouthpiece), fades off ═══ -->
+            <path d="M 154,36 C 158,40 162,44 164,52 C 166,60 163,67 167,74"
+              stroke="#00FF41" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+            <path d="M 167,74 C 169,80 167,86 171,92"
+              stroke="#00FF41" stroke-width="1.2" fill="none" opacity="0.18" stroke-linecap="round"/>
+
+            <!-- ═══ LABELS — below each cup ═══ -->
+            <text x="26" y="70" text-anchor="middle" font-family="'Courier New',monospace" font-size="7" fill="#00FF41" opacity="0.9" letter-spacing="1.5">SEND</text>
+            <text x="26" y="79" text-anchor="middle" font-family="'Courier New',monospace" font-size="5.5" fill="#005500" opacity="1" letter-spacing="0.3">tap · hold=polish</text>
+            <text x="134" y="70" text-anchor="middle" font-family="'Courier New',monospace" font-size="7" fill="#00FF41" opacity="0.9" letter-spacing="1.5">SPEAK</text>
+            <text x="134" y="79" text-anchor="middle" font-family="'Courier New',monospace" font-size="5.5" fill="#005500" opacity="1" letter-spacing="0.3">tap=dictate</text>
+
+          </svg>
+        </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: PROCESSING -->
+  <div id="screen-matrix-full" class="screen">
+    <div class="matrix-takeover">
+      <div class="signal-intercepted">SIGNAL INTERCEPTED</div>
+      <div id="terminal-lines">
+        <div class="t-line" id="tl1">&gt; ENCRYPTING PAYLOAD...</div>
+        <div class="t-line" id="tl2">&gt; ESTABLISHING SECURE LINK...</div>
+        <div class="t-line bright" id="tl3">&gt; AGENT: ONLINE</div>
+        <div class="t-line" id="tl4">&gt; DECODING INPUT...</div>
+        <div class="t-line" id="tl5">&gt; ROUTING INSTRUCTIONS...</div>
+        <div class="t-line" id="tl6">&gt; STRUCTURING BRIEF...</div>
+        <div class="t-line bright" id="tl7">&gt; TRANSMISSION READY.</div>
+      </div>
+      <div id="claude-status"></div>
+      <span class="blk-cursor">_</span>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: REVIEW -->
+  <div id="screen-review" class="screen">
+    <div class="review-scroll">
+      <div id="raw-display" style="display:none"></div>
+      <div class="agent-section">
+        <div class="hacker-icon">
+          <div class="hacker-svg-wrap">
+            <svg width="42" height="42" viewBox="0 0 72 72" fill="none">
+              <circle cx="36" cy="36" r="34" stroke="#00FF41" stroke-width="2" fill="#000"/>
+              <circle cx="36" cy="36" r="26" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.5"/>
+              <circle cx="36" cy="36" r="18" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.4"/>
+              <circle cx="36" cy="36" r="3.5" fill="#00FF41" opacity="0.9"/>
+              <circle cx="36" cy="4"    r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="53.6" cy="9.4" r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="65.6" cy="24"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="68"   cy="42"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="60.6" cy="58.6" r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="46"   cy="68"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="26"   cy="68"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="11.4" cy="58.6" r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="4"    cy="42"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="6.4"  cy="24"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="18.4" cy="9.4"  r="2.8" fill="#00FF41" opacity="0.85"/>
+              <circle cx="36"   cy="12" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="52.4" cy="19.6" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="60"   cy="36"  r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="52.4" cy="52.4" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="36"   cy="60"  r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="19.6" cy="52.4" r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="12"   cy="36"  r="2.2" fill="#00FF41" opacity="0.7"/>
+              <circle cx="19.6" cy="19.6" r="2.2" fill="#00FF41" opacity="0.7"/>
+            </svg>
+          </div>
+          <div class="icon-label">AGENT</div>
+          <div class="icon-status">● LIVE</div>
+        </div>
+        <div class="agent-content">
+          <div class="block-label">&gt; DECODED_BRIEF.MD</div>
+          <div id="brief-items-container"></div>
+        </div>
+      </div>
+      <div class="suggestions-block">
+        <div class="block-label">&gt; SUGGESTED_TASKS.LOG</div>
+        <div id="suggestions-container"></div>
+      </div>
+    </div>
+    <div class="review-actions">
+      <button class="btn btn-transmit" onclick="transmitToSource()">[ TRANSMIT TO THE SOURCE ]</button>
+      <button class="btn btn-back" onclick="showScreen('screen-write')">&#8592; EDIT TRANSMISSION</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: SENT — phone in cradle, tap to pick up -->
+  <div id="screen-sent" class="screen" style="background:rgba(0,0,0,0.0); justify-content:center; align-items:center; padding-top:100px;">
+
+    <div id="sent-title" class="sent-title" style="margin-bottom:4px;">SIGNAL TRANSMITTED</div>
+    <div id="sent-subtitle" style="font-size:9px;color:#005500;letter-spacing:3px;margin-bottom:6px;">MESSAGE RECEIVED. STAND BY.</div>
+
+    <!-- File info -->
+    <div style="font-size:10px;font-family:'Courier New';margin-bottom:28px;text-align:center;letter-spacing:0.5px;">
+      <span id="sent-delivery" style="color:#006600;font-weight:700;"></span><br>
+      <span id="sent-filename" style="color:#004400;font-size:9px;"></span>
+    </div>
+
+    <!-- Cradle phone — tap to pick up -->
+    <div class="cradle-wrap" onclick="newTransmission()" title="Pick up to transmit">
+      <svg width="160" height="180" viewBox="0 0 160 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- ═══ PHONE BASE / CRADLE ═══ -->
+        <rect x="10" y="110" width="140" height="60" rx="12" stroke="#00FF41" stroke-width="1.5" fill="#000" opacity="0.9"/>
+        <!-- Cradle indents for handset -->
+        <path d="M 30,110 Q 30,96 45,90 L 65,88" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.6"/>
+        <path d="M 130,110 Q 130,96 115,90 L 95,88" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.6"/>
+        <!-- Base details -->
+        <line x1="30" y1="130" x2="130" y2="130" stroke="#00FF41" stroke-width="0.5" opacity="0.2"/>
+        <circle cx="80" cy="145" r="12" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.3"/>
+        <!-- Dial dots on base (decorative) -->
+        <circle cx="60" cy="145" r="2" fill="#00FF41" opacity="0.25"/>
+        <circle cx="100" cy="145" r="2" fill="#00FF41" opacity="0.25"/>
+        <circle cx="80" cy="160" r="1.5" fill="#00FF41" opacity="0.2"/>
+
+        <!-- ═══ HANDSET IN CRADLE (resting at angle) ═══ -->
+        <!-- Handset body - rotated ~-30deg, centered on cradle -->
+        <g transform="translate(80,80) rotate(-28) translate(-28,-72)">
+          <!-- Body -->
+          <path d="M 28,8 C 44,8 50,18 50,30 C 51,40 47,50 44,60 C 41,72 41,82 44,94 C 47,104 51,114 50,124 C 50,136 44,144 28,144 C 12,144 6,136 6,124 C 5,114 9,104 12,94 C 15,82 15,72 12,60 C 9,50 5,40 6,30 C 6,18 12,8 28,8 Z"
+            stroke="#00FF41" stroke-width="1.8" fill="#000"/>
+          <!-- Earpiece -->
+          <circle cx="28" cy="28" r="15" stroke="#00FF41" stroke-width="1" fill="#000" opacity="0.9"/>
+          <circle cx="28" cy="20" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="37" cy="25" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="37" cy="35" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="28" cy="40" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="19" cy="35" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="19" cy="25" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="28" cy="28" r="2.5" fill="#00FF41" opacity="0.6"/>
+          <!-- Mouthpiece -->
+          <circle cx="28" cy="124" r="16" stroke="#00FF41" stroke-width="1.2" fill="#000" opacity="0.95"/>
+          <circle cx="28" cy="110" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="40" cy="117" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="44" cy="124" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="40" cy="131" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="28" cy="138" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="16" cy="131" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="12" cy="124" r="2" fill="#00FF41" opacity="0.8"/>
+          <circle cx="28" cy="124" r="2" fill="#00FF41" opacity="0.6"/>
+        </g>
+
+      </svg>
+      <div class="pickup-hint">[ PICK UP TO TRANSMIT ]</div>
+    </div>
+
+  </div>
+
+  <!-- HELP PANEL -->
+  <div id="help-panel">
+    <div class="setup-title">THE TEAM</div>
+
+    <div class="help-section">
+      <div class="help-section-title">Agents — who handles what</div>
+      <div class="help-agent"><div class="help-agent-name">LARRY</div><div class="help-agent-desc">Orchestrator. Routes every transmission to the right agent. You never talk to him directly — he just handles it.</div></div>
+      <div class="help-agent"><div class="help-agent-name">VERA</div><div class="help-agent-desc">Business ops. Leads, students, scheduling, roster. Most of your transmissions go here. Vera = truth.</div></div>
+      <div class="help-agent"><div class="help-agent-name">FORTE</div><div class="help-agent-desc">Marketing creative. Social copy, post drafts, lead replies, captions. Drafts only — Ben approves before anything posts.</div></div>
+      <div class="help-agent"><div class="help-agent-name">CANVAS</div><div class="help-agent-desc">Design. Graphics, flyers, social visuals. Request a design and Canvas builds it.</div></div>
+      <div class="help-agent"><div class="help-agent-name">SCOUT</div><div class="help-agent-desc">Research. Trends, competitors, what's working on TikTok. Ask Scout before building a campaign.</div></div>
+      <div class="help-agent"><div class="help-agent-name">BRIAN</div><div class="help-agent-desc">Session memory. Logs everything. You'll rarely address Brian directly.</div></div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">The flow</div>
+      <div class="help-rule">Tap SPEAK (mouthpiece) → speak freely</div>
+      <div class="help-rule">Tap SEND (earpiece) → transmits raw to Larry</div>
+      <div class="help-rule">Hold SEND → Claude polishes first → review → transmit</div>
+      <div class="help-rule">Log every lead the moment you make contact</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">One rule</div>
+      <div class="help-rule">Log every new lead the moment you make contact. The timestamp is your proof. If it's not logged, it's not counted.</div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">Your lane</div>
+      <div class="help-rule">✓ Log leads and update status</div>
+      <div class="help-rule">✓ Request posts from Forte</div>
+      <div class="help-rule">✓ Flag things for Ben's attention</div>
+      <div class="help-rule">✗ Don't commit to pricing or start dates</div>
+      <div class="help-rule">✗ Don't post without Ben's approval</div>
+    </div>
+
+    <button class="btn btn-back" onclick="toggleHelp()" style="margin-top:8px;">[ CLOSE ]</button>
+  </div>
+
+  <!-- SETTINGS PANEL -->
+  <div id="settings-panel">
+    <div class="setup-title">SYSTEM CONFIGURATION</div>
+
+    <div class="setup-field">
+      <div class="setup-label">AGENT KEY</div>
+      <input type="password" class="setup-input" id="settings-api-key" placeholder="sk-ant-api03-..." autocomplete="off"/>
+      <div class="setup-note">leave blank to keep existing key</div>
+    </div>
+
+    <hr class="setup-divider"/>
+
+    <div class="setup-field">
+      <div class="setup-label">ONEDRIVE CONNECTION</div>
+      <div id="ms-status" class="setup-note" style="margin-bottom:10px;">checking...</div>
+      <button class="btn btn-green" id="ms-connect-btn" onclick="connectMicrosoft()" style="font-size:11px; padding:12px;">[ CONNECT MICROSOFT ACCOUNT ]</button>
+      <button class="btn btn-back" id="ms-disconnect-btn" onclick="disconnectMicrosoft()" style="font-size:11px; padding:10px; display:none; margin-top:6px;">[ DISCONNECT ]</button>
+    </div>
+
+    <button class="btn btn-green" onclick="saveSettings()" style="margin-top:16px;">[ SAVE ]</button>
+    <button class="btn btn-back" onclick="toggleSettings()" style="margin-top:8px;">[ CANCEL ]</button>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+// ════════════════════════════════════════
+// CLAUDE SYSTEM PROMPT
+// ════════════════════════════════════════
+const SYSTEM_PROMPT = `You are a message decoder for Lilburn Piano Studio. Ben (studio owner) gives you raw voice notes or typed thoughts. You organize them into a clean, actionable brief for his AI team.
+
+THE TEAM:
+- VERA: students, leads, scheduling, lesson plans, studio ops, website, marketing operations
+- FORTE: marketing copy, social posts, campaigns — drafts only, never publishes
+- CANVAS: design, graphics, flyers — assets only
+- ATLAS: YouTube content pipeline tracking
+- QUILL: YouTube script writing
+
+CURRENT CONTEXT: use details provided in the user's message. If names, leads, or students are mentioned, treat them as real studio records. Prioritize business operations over content creation.
+
+OUTPUT FORMAT — return ONLY a valid JSON array, no other text:
+[
+  {
+    "agent": "VERA",
+    "flag": false,
+    "target": "short subject",
+    "action": "what to do — concise",
+    "status": "current state or context",
+    "next": "immediate next step"
+  }
+]
+
+RULES:
+- Max 5 items. Combine related items.
+- flag:true means Ben must decide before action.
+- Be specific — use real names and details.
+- If no clear target, use category: "Website", "Marketing", "Punch List", etc.
+- Return ONLY the JSON array. No markdown fences. No explanation.`;
+
+// ════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('sys-time').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ════════════════════════════════════════
+// MATRIX RAIN (scripture refs + sacred numbers)
+// ════════════════════════════════════════
+const canvas = document.getElementById('matrix-canvas');
+const ctx = canvas.getContext('2d');
+const MATRIX_CHARS = 'ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&*<>[]|';
+const SACRED_NUMS  = ['888','777','153','726','74','626','262','216','923','924','911'];
+const SCRIPTURE_CODES = ['JN3','PS23','ROM8','GAL5','COL3','HEB11','EPH2','PHP4','REV3','ISA40','MT11','PRV3'];
+const COL_W = 14;
+let drops = [], colSpecial = [], currentScreen = 'write';
+
+function initCanvas() {
+  const p = canvas.parentElement;
+  canvas.width  = p ? p.clientWidth  : window.innerWidth;
+  canvas.height = p ? p.clientHeight : window.innerHeight;
+  const cols = Math.floor(canvas.width / COL_W);
+  drops     = Array.from({length:cols}, () => Math.floor(Math.random()*-80));
+  colSpecial = Array.from({length:cols}, () => Math.random() < 0.12);
+}
+window.addEventListener('resize', initCanvas);
+function randChar() { return MATRIX_CHARS[Math.floor(Math.random()*MATRIX_CHARS.length)]; }
+function drawMatrix() {
+  const full = currentScreen === 'matrix-full';
+  ctx.fillStyle = full ? 'rgba(0,0,0,0.055)' : 'rgba(0,0,0,0.04)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  for (let i=0;i<drops.length;i++) {
+    const x=i*COL_W, y=drops[i]*COL_W;
+    if (y<0){drops[i]++;continue;}
+    const sp=colSpecial[i];
+    const useNum=sp&&Math.random()<0.15, useSc=sp&&!useNum&&Math.random()<0.18;
+    let hc,hcol,hf;
+    if (useNum){hc=SACRED_NUMS[Math.floor(Math.random()*SACRED_NUMS.length)];hcol=full?'#aaffaa':'#00cc44';hf=`bold ${full?8:7}px Courier New`;}
+    else if(useSc){hc=SCRIPTURE_CODES[Math.floor(Math.random()*SCRIPTURE_CODES.length)];hcol=full?'#ccffcc':'#00dd44';hf=`bold ${full?9:8}px Courier New`;}
+    else{hc=randChar();hcol=full?'#aaffaa':'#009922';hf=`bold 13px Courier New`;}
+    ctx.fillStyle=hcol;ctx.font=hf;ctx.fillText(hc,x,y);
+    const colors=full?['#00FF41','#00cc33','#009922','#006611','#003308']:['#006600','#004a00','#003300','#002200','#001500'];
+    colors.forEach((c,ti)=>{const ty=y-(ti+1)*COL_W;if(ty>0){ctx.fillStyle=c;ctx.font=`${full?13-ti:12-ti}px Courier New`;ctx.fillText(randChar(),x,ty);}});
+    if(y>canvas.height&&Math.random()>0.975){drops[i]=Math.floor(Math.random()*-40);colSpecial[i]=Math.random()<0.12;}
+    drops[i]++;
+  }
+}
+// Init canvas after layout is fully rendered
+setTimeout(initCanvas, 80);
+setInterval(drawMatrix, 45);
+
+// ════════════════════════════════════════
+// INTRO SEQUENCE
+// ════════════════════════════════════════
+const TRINITY_MSGS = [
+  "the Trinity has you.","you are held by the Trinity.",
+  "the Trinity intercedes for you.","you are hidden in the Trinity.",
+  "the Trinity goes before you.","the Trinity never sleeps.",
+  "rest in the Trinity.","the Trinity is your dwelling.",
+  "the Trinity holds all things together.","you cannot fall from the Trinity.",
+  "the Trinity is faithful.","union with the Trinity is your portion.",
+];
+function getWeeklyMsg(){const w=Math.floor(Date.now()/(7*24*60*60*1000));return TRINITY_MSGS[w%TRINITY_MSGS.length];}
+
+let introActive=false;
+function introSleep(ms){
+  return new Promise(res=>{
+    const start=Date.now();
+    const tick=()=>{if(!introActive||Date.now()-start>=ms)res();else setTimeout(tick,50);};
+    setTimeout(tick,50);
+  });
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+async function typeWrite(el,text,speed){
+  for(let i=0;i<=text.length;i++){
+    if(!introActive)return;
+    el.innerHTML=escHtml(text.slice(0,i))+'<span class="tw-cursor">_</span>';
+    await new Promise(r=>setTimeout(r,speed));
+  }
+}
+function endIntro(){
+  document.getElementById('intro-overlay').style.display='none';
+  const cur=document.getElementById('blink-cursor');
+  cur.classList.remove('hidden');
+  document.getElementById('user-input').focus();
+}
+function skipIntro(){
+  if(!introActive)return;
+  introActive=false;
+  document.getElementById('intro-msg').textContent='';
+  endIntro();
+}
+async function runIntroSequence(){
+  introActive=true;
+  const overlay=document.getElementById('intro-overlay');
+  const msgEl=document.getElementById('intro-msg');
+  overlay.style.display='flex';overlay.style.opacity='1';overlay.classList.remove('fading');
+  msgEl.innerHTML='';
+  const sequence=[
+    {text:"Wake up...",               speed:130},
+    {text:getWeeklyMsg(), speed:115},
+    {text:"Follow Jesus...",         speed:130},
+    {text:"Knock, knock...",         speed:130, final:true},
+  ];
+  for(let i=0;i<sequence.length;i++){
+    if(!introActive)return;
+    const s=sequence[i];
+    await introSleep(400);
+    if(!introActive)return;
+    await typeWrite(msgEl,s.text,s.speed);
+    if(!introActive)return;
+    msgEl.textContent=s.text;
+    await introSleep(3000);
+    if(!introActive)return;
+    msgEl.textContent='';
+    if(!s.final)await introSleep(500);
+  }
+  introActive=false;
+  overlay.classList.add('fading');
+  await new Promise(r=>setTimeout(r,1000));
+  endIntro();
+}
+
+// ════════════════════════════════════════
+// SETUP & SETTINGS
+// ════════════════════════════════════════
+function getApiKey(){return localStorage.getItem('uplink_api_key')||'';}
+function getWebhook(){return localStorage.getItem('uplink_webhook_url')||'';}
+
+function saveSetup(){
+  const k=document.getElementById('setup-api-key').value.trim();
+  const w=document.getElementById('setup-webhook').value.trim();
+  if(!k){alert('Agent key is required.');return;}
+  localStorage.setItem('uplink_api_key',k);
+  if(w)localStorage.setItem('uplink_webhook_url',w);
+  localStorage.setItem('uplink_setup_done','1');
+  // Clean URL so ?reset=1 doesn't re-trigger on refresh
+  history.replaceState({},'',window.location.pathname);
+  showScreen('screen-write');
+  runIntroSequence();
+}
+function saveSettings(){
+  const k=document.getElementById('settings-api-key').value.trim();
+  const w=document.getElementById('settings-webhook').value.trim();
+  if(k)localStorage.setItem('uplink_api_key',k);
+  if(w)localStorage.setItem('uplink_webhook_url',w);
+  toggleSettings();
+}
+function toggleMenu(){
+  document.getElementById('menu-dropdown').classList.toggle('open');
+}
+// Close menu when tapping elsewhere
+document.addEventListener('click', () => {
+  const d = document.getElementById('menu-dropdown');
+  if (d) d.classList.remove('open');
+});
+
+function toggleHelp(){
+  const p=document.getElementById('help-panel');
+  p.classList.toggle('active');
+}
+
+function updateStatusBar(){
+  const hasKey       = !!getApiKey();
+  const hasMicrosoft = !!localStorage.getItem('ms_user');
+  const cEl = document.getElementById('status-claude');
+  const mEl = document.getElementById('status-ms');
+  // CLAUDE status
+  if(cEl){
+    cEl.textContent = hasKey ? 'CLAUDE ✓' : 'CLAUDE ○';
+    cEl.style.color = hasKey ? '#00FF41' : '#555500';
+  }
+  // NEB status — connected if Microsoft account linked (means Larry's ship can receive)
+  if(mEl){
+    mEl.textContent = hasMicrosoft ? 'NEB ✓' : 'NEB ○';
+    mEl.style.color = hasMicrosoft ? '#00FF41' : '#555500';
+    mEl.title       = hasMicrosoft
+      ? 'Nebuchadnezzar online — Larry and team receiving'
+      : 'Nebuchadnezzar offline — connect Microsoft account';
+  }
+}
+
+function toggleSettings(){
+  try{
+    const p=document.getElementById('settings-panel');
+    if(!p){alert('ERROR: settings panel not found');return;}
+    const isOpen=p.classList.contains('active');
+    if(isOpen){
+      p.classList.remove('active');
+    } else {
+      try{document.getElementById('settings-webhook').value=getWebhook();}catch(e){}
+      p.classList.add('active');
+      try{updateMsStatus();}catch(e){}
+    }
+  }catch(e){alert('CONFIG error: '+e.message);}
+}
+
+// ════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ════════════════════════════════════════
+function showScreen(id){
+  // Kill intro whenever we leave the write screen
+  if(id !== 'screen-write') skipIntro();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  currentScreen=id.replace('screen-','');
+  document.getElementById('sys-header').style.display=(id==='screen-matrix-full')?'none':'';
+  if(id==='screen-write') document.getElementById('user-input').focus();
+}
+
+// ════════════════════════════════════════
+// SESSION TRACKING — intro only on fresh open
+// ════════════════════════════════════════
+let sessionActive = false;
+
+// ════════════════════════════════════════
+// WEB SPEECH API
+// ════════════════════════════════════════
+let recognition = null;
+let isListening  = false;
+
+function startDictation() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) { alert('Voice not supported in this browser. Use Safari on iPhone.'); return; }
+  if (isListening) { stopDictation(); return; }
+
+  recognition = new SpeechRec();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = (e) => {
+    let t = '';
+    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+    ta.value = t;
+    cur.classList.toggle('hidden', t.length > 0);
+  };
+  recognition.onerror = () => stopDictation();
+  recognition.onend   = () => { isListening = false; updateHandsetHint(); };
+
+  recognition.start();
+  isListening = true;
+  updateHandsetHint();
+}
+
+function stopDictation() {
+  if (recognition) { recognition.stop(); recognition = null; }
+  isListening = false;
+  updateHandsetHint();
+}
+
+function updateHandsetHint() {
+  const hw  = document.getElementById('handset-wrap');
+  const ma  = document.getElementById('mouth-active');
+  if (isListening) {
+    if (hw) hw.classList.add('listening');
+    if (ma) { ma.style.opacity='1'; ma.style.display=''; }
+  } else {
+    if (hw) hw.classList.remove('listening');
+    if (ma) { ma.style.opacity='0'; }
+  }
+}
+
+// ── Handset interaction ──
+let longPressTimer = null;
+
+function handsetTouchStart(e) {
+  e.preventDefault();
+  // Determine which part was tapped
+  const svg = e.currentTarget.querySelector('svg');
+  const rect = svg.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const relX = (clientX - rect.left) / rect.width; // 0=left, 1=right
+
+  if (relX > 0.55) {
+    // MOUTHPIECE (right 45%) — tap to dictate
+    startDictation();
+  } else {
+    // EARPIECE (left 55%) — tap = raw send, long-press = Claude
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      // Long press — Claude polish
+      const raw = ta.value.trim();
+      if (!raw) return;
+      stopDictation();
+      startEncoding();
+    }, 600);
+  }
+}
+
+function handsetTouchEnd(e) {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+    // Short tap on earpiece — raw send
+    const raw = ta.value.trim();
+    if (raw) {
+      stopDictation();
+      sendRaw();
+    }
+  }
+}
+
+// ════════════════════════════════════════
+// SENDER — auto from Microsoft login
+// ════════════════════════════════════════
+let currentSender = 'BEN';
+
+function updateSenderDisplay() {
+  const user = localStorage.getItem('ms_user') || '';
+  // Map email/username to display name
+  if (user.toLowerCase().includes('studio@') || user.toLowerCase().includes('benanddinah')) {
+    currentSender = 'BEN';
+  } else if (user.length > 0) {
+    // Use first part of email as sender name, uppercased
+    currentSender = user.split('@')[0].split('.')[0].toUpperCase();
+  } else {
+    currentSender = 'BEN'; // default
+  }
+  const el = document.getElementById('sender-display');
+  if (el) el.textContent = currentSender;
+}
+
+// ════════════════════════════════════════
+// TEXTAREA CURSOR
+// ════════════════════════════════════════
+const ta=document.getElementById('user-input');
+const cur=document.getElementById('blink-cursor');
+ta.addEventListener('focus',()=>{skipIntro();cur.classList.remove('hidden');});
+ta.addEventListener('blur',()=>{if(ta.value.length>0)cur.classList.add('hidden');});
+ta.addEventListener('input',()=>{cur.classList.toggle('hidden',ta.value.length>0);});
+
+// ════════════════════════════════════════
+// CLAUDE API CALL
+// ════════════════════════════════════════
+async function callClaude(input){
+  const apiKey=getApiKey();
+  if(!apiKey) throw new Error('KEY_MISSING: No API key. Tap CONFIG to add one.');
+
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'content-type':'application/json',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1024,
+        system:SYSTEM_PROMPT,
+        messages:[{role:'user',content:input}]
+      })
+    });
+  } catch(e) {
+    throw new Error('NETWORK: Cannot reach Anthropic. Check internet connection.');
+  }
+
+  if(!resp.ok){
+    const e=await resp.json().catch(()=>({}));
+    const msg=e.error?.message||'HTTP '+resp.status;
+    if(resp.status===401) throw new Error('KEY_INVALID: API key rejected. Tap CONFIG → enter a new key from console.anthropic.com');
+    if(resp.status===429) throw new Error('RATE_LIMIT: Too many requests. Wait 30 seconds and try again.');
+    throw new Error('API_ERROR: '+msg);
+  }
+
+  const data=await resp.json();
+  const text=data.content?.[0]?.text;
+  if(!text) throw new Error('EMPTY: Claude returned no content. Try again.');
+  return text;
+}
+
+// ════════════════════════════════════════
+// PARSE CLAUDE RESPONSE
+// ════════════════════════════════════════
+function parseClaudeResponse(result){
+  // Strategy 1: pure JSON array
+  try{
+    const p=JSON.parse(result.trim());
+    if(Array.isArray(p)&&p.length>0) return p;
+  }catch{}
+
+  // Strategy 2: JSON array embedded in text
+  try{
+    const match=result.match(/\[[\s\S]*?\]/);
+    if(match){
+      const p=JSON.parse(match[0]);
+      if(Array.isArray(p)&&p.length>0) return p;
+    }
+  }catch{}
+
+  // Strategy 3: Claude returned plain text — wrap it as a raw note
+  if(result.trim().length>0){
+    return [{
+      agent:'VERA',flag:false,
+      target:'Raw Note',
+      action:result.trim().substring(0,300),
+      status:'Formatted as plain text — not JSON',
+      next:'Review and route manually'
+    }];
+  }
+
+  return null; // complete failure
+}
+
+// ════════════════════════════════════════
+// BRIEF RENDERING
+// ════════════════════════════════════════
+let parsedItems=[];
+
+function renderBrief(items){
+  parsedItems=items;
+  const container=document.getElementById('brief-items-container');
+  container.innerHTML='';
+  items.forEach((item,idx)=>{
+    const isFlag=item.flag===true||item.agent.includes('FLAG');
+    const agentDisplay=isFlag?`${item.agent} &middot; FLAG`:item.agent;
+    const div=document.createElement('div');
+    div.className='brief-item';
+    div.id='item-'+idx;
+    div.innerHTML=`
+      <div class="item-header">
+        <div class="matrix-check unchecked" onclick="toggleCheck(${idx})"></div>
+        <div class="agent-tag${isFlag?' flag':''}">&rarr; ${agentDisplay}</div>
+      </div>
+      <div class="brief-lines">
+        <div class="brief-line"><span class="line-key">TARGET:</span><span class="line-val" contenteditable="true">${escHtml(item.target||'')}</span></div>
+        <div class="brief-line"><span class="line-key">ACTION:</span><span class="line-val" contenteditable="true">${escHtml(item.action||'')}</span></div>
+        <div class="brief-line"><span class="line-key">STATUS:</span><span class="line-val" contenteditable="true">${escHtml(item.status||'')}</span></div>
+        <div class="brief-line"><span class="line-key">NEXT:</span><span class="line-val" contenteditable="true">${escHtml(item.next||'')}</span></div>
+      </div>`;
+    container.appendChild(div);
+  });
+
+  // Default suggestions
+  const sugs=[
+    {text:'Check intake form responses — any new leads?', checked:false},
+    {text:'Review punch list for stalled items', checked:false},
+    {text:'Review open leads — any follow-ups needed?', checked:false},
+  ];
+  const sc=document.getElementById('suggestions-container');
+  sc.innerHTML='';
+  sugs.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='suggestion-item'+(s.checked?' checked':'');
+    d.onclick=()=>toggleSuggestion(d);
+    d.innerHTML=`<div class="matrix-check${s.checked?'':' unchecked'}">${s.checked?'✓':''}</div><div class="sug-text">${s.text}</div>`;
+    sc.appendChild(d);
+  });
+}
+
+function toggleCheck(idx){
+  const item=document.getElementById('item-'+idx);
+  const chk=item.querySelector('.matrix-check');
+  const checked=!chk.classList.contains('unchecked');
+  if(checked){chk.classList.add('unchecked');chk.textContent='';item.classList.add('excluded');}
+  else{chk.classList.remove('unchecked');chk.textContent='✓';item.classList.remove('excluded');}
+}
+function toggleSuggestion(el){
+  const chk=el.querySelector('.matrix-check');
+  if(el.classList.contains('checked')){el.classList.remove('checked');chk.classList.add('unchecked');chk.textContent='';}
+  else{el.classList.add('checked');chk.classList.remove('unchecked');chk.textContent='✓';}
+}
+
+// ════════════════════════════════════════
+// ENCODING FLOW
+// ════════════════════════════════════════
+const termLines=['tl1','tl2','tl3','tl4','tl5','tl6','tl7'];
+let termTimeouts=[];
+
+async function startEncoding(){
+  const raw=ta.value.trim();
+  if(!raw){ta.focus();return;}
+  if(!getApiKey()){showScreen('screen-setup');return;}
+
+  document.getElementById('raw-display').textContent=raw;
+  termTimeouts.forEach(t=>clearTimeout(t));
+  termTimeouts=[];
+  termLines.forEach(id=>document.getElementById(id).classList.remove('visible'));
+  document.getElementById('claude-status').className='';
+  document.getElementById('claude-status').textContent='';
+
+  showScreen('screen-matrix-full');
+
+  // Fire terminal lines
+  [300,750,1250,1750,2250,2750,3200].forEach((d,i)=>{
+    const t=setTimeout(()=>document.getElementById(termLines[i]).classList.add('visible'),d);
+    termTimeouts.push(t);
+  });
+
+  // Call Claude
+  let briefItems=[];
+  const statusEl=document.getElementById('claude-status');
+  try{
+    setTimeout(()=>{statusEl.textContent='> AGENT ONLINE — DECODING...';statusEl.className='visible';},1600);
+    const result=await callClaude(raw);
+    statusEl.textContent='> PARSING BRIEF...';
+    const parsed=parseClaudeResponse(result);
+    if(!parsed){
+      throw new Error('PARSE_FAIL: Could not read Claude response. Try again.');
+    }
+    briefItems=parsed;
+    statusEl.textContent='> BRIEF DECODED. ✓';
+    await new Promise(r=>setTimeout(r,700));
+  }catch(err){
+    console.error('Claude error:',err);
+    const errCode=err.message.split(':')[0];
+    const errDetail=err.message.includes(':')?err.message.split(':').slice(1).join(':').trim():err.message;
+    // Clear, actionable error brief
+    briefItems=[{
+      agent:'VERA',
+      flag:true,
+      target:'⚠ CONNECTION ERROR',
+      action:errDetail,
+      status:errCode,
+      next: errCode==='KEY_INVALID'||errCode==='KEY_MISSING'
+        ? 'Tap CONFIG in the header to update your API key'
+        : 'Check your connection and try again, or tap RAW SIGNAL to bypass Claude'
+    }];
+    statusEl.textContent='> ERROR — SEE BRIEF';
+    await new Promise(r=>setTimeout(r,700));
+  }
+
+  renderBrief(briefItems);
+  showScreen('screen-review');
+}
+
+// ════════════════════════════════════════
+// TRANSMIT TO THE SOURCE
+// ════════════════════════════════════════
+async function transmitToSource(){
+  const now=new Date();
+  const ts=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
+  const filename=`signal-${currentSender}-${ts}.md`;
+
+  // Collect checked brief items
+  const items=[];
+  document.querySelectorAll('.brief-item:not(.excluded)').forEach((el,idx)=>{
+    const vals=el.querySelectorAll('.line-val');
+    const agentTag=el.querySelector('.agent-tag').textContent.replace('→','').trim();
+    items.push({agent:agentTag,target:vals[0]?.textContent,action:vals[1]?.textContent,status:vals[2]?.textContent,next:vals[3]?.textContent});
+  });
+
+  // Collect checked suggestions
+  const sugs=[];
+  document.querySelectorAll('.suggestion-item.checked .sug-text').forEach(el=>sugs.push('- [x] '+el.textContent));
+  document.querySelectorAll('.suggestion-item:not(.checked) .sug-text').forEach(el=>sugs.push('- [ ] '+el.textContent));
+
+  // Build markdown file
+  const rawText=document.getElementById('raw-display').textContent;
+  let md=`# Signal — ${ts.replace(/-(\d{4})$/,' $1').replace(/-/g,'-')}\n_Source: UPLINK / ${currentSender}_\n\n---\n\n## Decoded Brief\n\n`;
+  items.forEach(item=>{
+    md+=`**${item.agent}**\n`;
+    md+=`TARGET: ${item.target}\nACTION: ${item.action}\nSTATUS: ${item.status}\nNEXT: ${item.next}\n\n`;
+  });
+  if(sugs.length){md+=`---\n\n## Suggested Tasks\n\n${sugs.join('\n')}\n\n`;}
+  md+=`---\n\n## Raw Transmission\n\n${rawText}\n`;
+
+  document.getElementById('sent-filename').textContent=filename;
+
+  // Try Graph API → webhook → Web Share → clipboard
+  let sent=false, deliveryMethod='UNKNOWN';
+
+  // Option A: Graph API (best — direct to Team-Inbox)
+  try{
+    const token=await getMsToken();
+    if(token){
+      const graphResp=await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/root:/PKA-Business/Team-Inbox/${encodeURIComponent(filename)}:/content`,
+        {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:md}
+      );
+      if(graphResp.ok){
+        sent=true;
+        deliveryMethod='ONEDRIVE DIRECT ✓';
+      } else {
+        const errBody=await graphResp.json().catch(()=>({}));
+        deliveryMethod='GRAPH FAILED: '+graphResp.status+' — '+(errBody.error?.message||'unknown');
+        console.warn('Graph API failed:',graphResp.status, errBody);
+      }
+    }
+  }catch(e){
+    deliveryMethod='GRAPH ERROR: '+e.message;
+    console.warn('Graph API error:',e);
+  }
+
+  // Option B: Power Automate webhook
+  if(!sent){
+    const webhookUrl=getWebhook();
+    if(webhookUrl){
+      try{
+        await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});
+        sent=true; deliveryMethod='WEBHOOK ✓';
+      }catch(e){console.warn('Webhook failed:',e);}
+    }
+  }
+
+  // Option C: iOS Share Sheet
+  if(!sent){
+    try{
+      const file=new File([md],filename,{type:'text/plain'});
+      await navigator.share({title:'Signal '+ts,files:[file]});
+      sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
+    }catch(e){
+      try{await navigator.clipboard.writeText(md);}catch{}
+      deliveryMethod='CLIPBOARD — paste manually';
+      alert('Brief copied. Paste into Team-Inbox as '+filename);
+    }
+  }
+
+  showSentScreen(sent, deliveryMethod);
+}
+
+function showSentScreen(success, method){
+  const titleEl=document.getElementById('sent-title');
+  const subtitleEl=document.getElementById('sent-subtitle');
+  const deliveryEl=document.getElementById('sent-delivery');
+  const confirmed=success&&(method.includes('ONEDRIVE')||method.includes('WEBHOOK'));
+  if(confirmed){
+    titleEl.textContent='SIGNAL TRANSMITTED';
+    titleEl.style.color='';
+    titleEl.style.textShadow='';
+    subtitleEl.textContent='MESSAGE RECEIVED. STAND BY.';
+    subtitleEl.style.color='#005500';
+    deliveryEl.style.color='#00FF41';
+  } else {
+    titleEl.textContent='⚠ DELIVERY FAILED';
+    titleEl.style.color='#ff4400';
+    titleEl.style.textShadow='0 0 14px #ff4400';
+    subtitleEl.textContent='GO TO CONFIG → RECONNECT MICROSOFT';
+    subtitleEl.style.color='#ff4400';
+    deliveryEl.style.color='#ff6600';
+  }
+  deliveryEl.textContent=method;
+  showScreen('screen-sent');
+}
+
+function newTransmission(){
+  ta.value='';
+  cur.classList.remove('hidden');
+  stopDictation();
+  showScreen('screen-write'); // no intro — session already active
+}
+
+async function sendRaw(){
+  const raw=ta.value.trim();
+  if(!raw){ta.focus();return;}
+  const now=new Date();
+  const ts=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
+  const filename=`signal-raw-${currentSender}-${ts}.md`;
+  const md=`# Raw Signal — ${ts}\n_Source: UPLINK / ${currentSender} — unprocessed_\n\n---\n\n${raw}\n`;
+  document.getElementById('sent-filename').textContent=filename;
+
+  let sent=false, deliveryMethod='UNKNOWN';
+
+  // Option A: Graph API (primary — same as transmitToSource)
+  try{
+    const token=await getMsToken();
+    if(token){
+      const graphResp=await fetch(
+        `https://graph.microsoft.com/v1.0/me/drive/root:/PKA-Business/Team-Inbox/${encodeURIComponent(filename)}:/content`,
+        {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:md}
+      );
+      if(graphResp.ok){
+        sent=true;
+        deliveryMethod='ONEDRIVE DIRECT ✓';
+      } else {
+        const errBody=await graphResp.json().catch(()=>({}));
+        deliveryMethod='GRAPH FAILED: '+graphResp.status+' — '+(errBody.error?.message||'unknown');
+        console.warn('Graph API failed:',graphResp.status,errBody);
+      }
+    } else {
+      deliveryMethod='GRAPH FAILED: no token — reconnect Microsoft in CONFIG';
+    }
+  }catch(e){
+    deliveryMethod='GRAPH ERROR: '+e.message;
+    console.warn('Graph API error:',e);
+  }
+
+  // Option B: Power Automate webhook
+  if(!sent){
+    const webhookUrl=getWebhook();
+    if(webhookUrl){
+      try{
+        await fetch(webhookUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({filename,content:md})});
+        sent=true; deliveryMethod='WEBHOOK ✓';
+      }catch(e){console.warn('Webhook failed:',e);}
+    }
+  }
+
+  // Option C: iOS Share Sheet
+  if(!sent){
+    try{
+      const file=new File([md],filename,{type:'text/plain'});
+      await navigator.share({title:'Raw Signal '+ts,files:[file]});
+      sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
+    }catch(e){
+      try{await navigator.clipboard.writeText(md);}catch{}
+      deliveryMethod='CLIPBOARD — paste manually';
+      alert('Signal copied. Paste into Team-Inbox as '+filename);
+    }
+  }
+
+  showSentScreen(sent, deliveryMethod);
+}
+
+// ════════════════════════════════════════
+// MICROSOFT OAUTH — PKCE (no external library)
+// ════════════════════════════════════════
+const MS_CLIENT_ID='10cb66fb-13a0-4999-a9fa-dbfa245d0247';
+const MS_TENANT_ID='c12a9d4f-9d34-44de-a16b-3ebae0474c37';
+const MS_REDIRECT='https://lilburnpianostudio.github.io/uplink/';
+const MS_SCOPE='Files.ReadWrite offline_access';
+
+function b64url(buf){
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function pkce_sha256(str){
+  return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+}
+function randStr(){ return b64url(crypto.getRandomValues(new Uint8Array(32))); }
+
+async function connectMicrosoft(){
+  const verifier=randStr(), state=randStr();
+  const challenge=b64url(await pkce_sha256(verifier));
+  localStorage.setItem('ms_v',verifier);
+  localStorage.setItem('ms_s',state);
+  const p=new URLSearchParams({
+    client_id:MS_CLIENT_ID,response_type:'code',
+    redirect_uri:MS_REDIRECT,scope:MS_SCOPE,
+    code_challenge:challenge,code_challenge_method:'S256',
+    state,prompt:'select_account'
+  });
+  window.location='https://login.microsoftonline.com/'+MS_TENANT_ID+'/oauth2/v2.0/authorize?'+p;
+}
+
+async function handleMsCallback(){
+  const p=new URLSearchParams(window.location.search);
+  const code=p.get('code'),state=p.get('state');
+  if(!code||state!==localStorage.getItem('ms_s')) return false;
+  const body=new URLSearchParams({
+    client_id:MS_CLIENT_ID,grant_type:'authorization_code',
+    code,redirect_uri:MS_REDIRECT,
+    code_verifier:localStorage.getItem('ms_v')
+  });
+  try{
+    const resp=await fetch('https://login.microsoftonline.com/'+MS_TENANT_ID+'/oauth2/v2.0/token',
+      {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const data=await resp.json();
+    if(data.access_token){
+      localStorage.setItem('ms_at',data.access_token);
+      localStorage.setItem('ms_rt',data.refresh_token||'');
+      localStorage.setItem('ms_exp',Date.now()+(data.expires_in*1000));
+      try{
+        const pl=JSON.parse(atob(data.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+        localStorage.setItem('ms_user',pl.preferred_username||pl.email||'connected');
+      }catch{}
+      localStorage.removeItem('ms_v');localStorage.removeItem('ms_s');
+      return true;
+    }
+  }catch(e){console.error('Token exchange error:',e);}
+  return false;
+}
+
+async function getMsToken(){
+  const token=localStorage.getItem('ms_at');
+  const expiry=parseInt(localStorage.getItem('ms_exp')||'0');
+  const refresh=localStorage.getItem('ms_rt');
+  if(!token) return null;
+  if(Date.now()<expiry-60000) return token;
+  if(!refresh) return null;
+  try{
+    const body=new URLSearchParams({
+      client_id:MS_CLIENT_ID,grant_type:'refresh_token',
+      refresh_token:refresh,scope:MS_SCOPE
+    });
+    const resp=await fetch('https://login.microsoftonline.com/'+MS_TENANT_ID+'/oauth2/v2.0/token',
+      {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const data=await resp.json();
+    if(data.access_token){
+      localStorage.setItem('ms_at',data.access_token);
+      localStorage.setItem('ms_exp',Date.now()+(data.expires_in*1000));
+      if(data.refresh_token) localStorage.setItem('ms_rt',data.refresh_token);
+      return data.access_token;
+    }
+  }catch(e){console.warn('Refresh failed:',e);}
+  return null;
+}
+
+function disconnectMicrosoft(){
+  ['ms_at','ms_rt','ms_exp','ms_user','ms_v','ms_s'].forEach(k=>localStorage.removeItem(k));
+  updateMsStatus();
+}
+
+function updateMsStatus(){
+  const statusEl=document.getElementById('ms-status');
+  const connectBtn=document.getElementById('ms-connect-btn');
+  const disconnectBtn=document.getElementById('ms-disconnect-btn');
+  if(!statusEl) return;
+  const user=localStorage.getItem('ms_user');
+  if(user){
+    statusEl.textContent='● CONNECTED — '+user;
+    statusEl.style.color='#00FF41';
+    if(connectBtn) connectBtn.style.display='none';
+    if(disconnectBtn) disconnectBtn.style.display='block';
+  } else {
+    statusEl.textContent='○ NOT CONNECTED';
+    statusEl.style.color='#666600';
+    if(connectBtn) connectBtn.style.display='block';
+    if(disconnectBtn) disconnectBtn.style.display='none';
+  }
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+window.addEventListener('load', async ()=>{
+  // Handle Microsoft OAuth callback
+  if(window.location.search.includes('code=')){
+    const ok=await handleMsCallback();
+    if(ok){ console.log('Microsoft connected:',localStorage.getItem('ms_user')); updateSenderDisplay(); updateStatusBar(); }
+    history.replaceState({},'',window.location.pathname);
+  }
+
+  // ?reset=1 forces setup screen
+  if(new URLSearchParams(window.location.search).get('reset')==='1'){
+    localStorage.removeItem('uplink_setup_done');
+    localStorage.removeItem('uplink_api_key');
+  }
+  updateSenderDisplay();
+  updateStatusBar();
+  if(!localStorage.getItem('uplink_setup_done')){
+    showScreen('screen-setup');
+  } else {
+    showScreen('screen-write');
+    if(!sessionActive) {
+      sessionActive = true;
+      runIntroSequence();
+    }
+  }
+});
+</script>
+</body>
+</html>
