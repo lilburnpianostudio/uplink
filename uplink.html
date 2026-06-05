@@ -903,7 +903,7 @@ function toggleHelp(){
 
 function updateStatusBar(){
   const hasKey       = !!getApiKey();
-  const hasMicrosoft = !!localStorage.getItem('ms_user');
+  const hasMicrosoft = !!(localStorage.getItem('ms_user') || localStorage.getItem('ms_at'));
   const cEl = document.getElementById('status-claude');
   const mEl = document.getElementById('status-ms');
   // CLAUDE status
@@ -1063,13 +1063,12 @@ let currentSender = 'BEN';
 function updateSenderDisplay() {
   const user = localStorage.getItem('ms_user') || '';
   // Map email/username to display name
-  if (user.toLowerCase().includes('studio@') || user.toLowerCase().includes('benanddinah')) {
+  if (!user || user === 'connected' || user.toLowerCase().includes('studio@') || user.toLowerCase().includes('benanddinah')) {
     currentSender = 'BEN';
-  } else if (user.length > 0) {
-    // Use first part of email as sender name, uppercased
+  } else if (user.includes('@')) {
     currentSender = user.split('@')[0].split('.')[0].toUpperCase();
   } else {
-    currentSender = 'BEN'; // default
+    currentSender = 'BEN';
   }
   const el = document.getElementById('sender-display');
   if (el) el.textContent = currentSender;
