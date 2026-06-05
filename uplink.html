@@ -189,6 +189,7 @@
     filter: drop-shadow(0 0 8px rgba(0,255,65,0.4));
     transition: filter 0.2s;
   }
+  .handset-wrap { transition: opacity 0.6s, transform 0.6s; }
   .handset-wrap.listening {
     filter: drop-shadow(0 0 20px #00FF41) drop-shadow(0 0 50px rgba(0,255,65,0.8));
     animation: listen-pulse 0.8s ease-in-out infinite;
@@ -333,21 +334,10 @@
       </div>
       <!-- Bullet hamburger menu — sideways shell = death defeated -->
       <button class="menu-btn" onclick="event.stopPropagation();toggleMenu()">
-        <!-- Three sideways bullets -->
-        <svg width="38" height="16" viewBox="0 0 38 16" fill="none">
-          <!-- Bullet — clean profile, pointing right -->
-          <!-- Casing -->
-          <rect x="1" y="4" width="18" height="8" rx="1.5"
-            stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.1)"/>
-          <!-- Primer circle -->
-          <circle cx="5" cy="8" r="2.2" stroke="#00FF41" stroke-width="0.8" fill="none" opacity="0.7"/>
-          <!-- Crimp -->
-          <line x1="19" y1="4" x2="19" y2="12" stroke="#00FF41" stroke-width="1" opacity="0.6"/>
-          <!-- Bullet nose -->
-          <path d="M 19,4 L 30,4 Q 37,6 37,8 Q 37,10 30,12 L 19,12 Z"
-            stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.18)"/>
-          <!-- Tip glow -->
-          <circle cx="36" cy="8" r="2" fill="#00FF41" opacity="0.9"/>
+        <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+          <line x1="0" y1="2"  x2="22" y2="2"  stroke="#00FF41" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="0" y1="8"  x2="22" y2="8"  stroke="#00FF41" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="0" y1="14" x2="22" y2="14" stroke="#00FF41" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </button>
       <!-- Dropdown -->
@@ -946,13 +936,25 @@ function toggleSettings(){
 // SCREEN MANAGEMENT
 // ════════════════════════════════════════
 function showScreen(id){
-  // Kill intro whenever we leave the write screen
   if(id !== 'screen-write') skipIntro();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   currentScreen=id.replace('screen-','');
   document.getElementById('sys-header').style.display=(id==='screen-matrix-full')?'none':'';
   if(id==='screen-write') document.getElementById('user-input').focus();
+  // Handset: dim and flatten when not on write screen (phone at rest)
+  const hw = document.getElementById('handset-wrap');
+  if(hw){
+    if(id === 'screen-write'){
+      hw.style.opacity = '1';
+      hw.style.transform = 'rotate(-15deg)';
+      hw.style.pointerEvents = 'auto';
+    } else {
+      hw.style.opacity = '0.18';
+      hw.style.transform = 'rotate(0deg)';
+      hw.style.pointerEvents = 'none';
+    }
+  }
 }
 
 // ════════════════════════════════════════
