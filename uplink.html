@@ -311,7 +311,7 @@
       <span id="status-claude" style="color:#555500;">CLAUDE ○</span>
       <span id="sys-time">--:--</span>
       <span id="status-ms" style="color:#555500;">MS ○</span>
-      <span id="outbox-badge" style="display:none;background:#ffaa00;color:#000;font-size:9px;font-weight:700;border-radius:10px;padding:1px 6px;letter-spacing:1px;margin-left:4px;"></span>
+      <span id="outbox-badge" onclick="outboxFlush()" title="Tap to retry delivery" style="display:none;background:#ffaa00;color:#000;font-size:9px;font-weight:700;border-radius:10px;padding:1px 6px;letter-spacing:1px;margin-left:4px;cursor:pointer;"></span>
     </div>
     <div class="app-title-bar">
       <div>
@@ -572,9 +572,14 @@
     <div id="sent-subtitle" style="font-size:9px;color:#005500;letter-spacing:3px;margin-bottom:6px;">MESSAGE RECEIVED. STAND BY.</div>
 
     <!-- File info -->
-    <div style="font-size:10px;font-family:'Courier New';margin-bottom:28px;text-align:center;letter-spacing:0.5px;">
+    <div style="font-size:10px;font-family:'Courier New';margin-bottom:16px;text-align:center;letter-spacing:0.5px;">
       <span id="sent-delivery" style="color:#006600;font-weight:700;"></span><br>
       <span id="sent-filename" style="color:#004400;font-size:9px;"></span>
+    </div>
+
+    <!-- Reconnect prompt — shown when delivery fails due to expired token -->
+    <div id="sent-reconnect" style="display:none;margin-bottom:16px;">
+      <button class="btn btn-green" onclick="toggleSettings()" style="font-size:11px;padding:12px;width:220px;">[ RECONNECT MICROSOFT ]</button>
     </div>
 
     <!-- Cradle phone — tap to pick up -->
@@ -873,7 +878,8 @@ function saveSetup(){
 }
 function saveSettings(){
   const k=document.getElementById('settings-api-key').value.trim();
-  const w=document.getElementById('settings-webhook').value.trim();
+  const wEl=document.getElementById('settings-webhook');
+  const w=wEl?wEl.value.trim():'';
   if(k)localStorage.setItem('uplink_api_key',k);
   if(w)localStorage.setItem('uplink_webhook_url',w);
   toggleSettings();
@@ -893,22 +899,31 @@ function toggleHelp(){
 }
 
 function updateStatusBar(){
-  const hasKey       = !!getApiKey();
-  const hasMicrosoft = !!localStorage.getItem('ms_user');
+  const hasKey     = !!getApiKey();
+  const user       = localStorage.getItem('ms_user');
+  const exp        = parseInt(localStorage.getItem('ms_exp')||'0');
+  const hasRefresh = !!localStorage.getItem('ms_rt');
+  const tokenFresh = exp > Date.now() + 60000;
   const cEl = document.getElementById('status-claude');
   const mEl = document.getElementById('status-ms');
-  // CLAUDE status
   if(cEl){
     cEl.textContent = hasKey ? 'CLAUDE ✓' : 'CLAUDE ○';
     cEl.style.color = hasKey ? '#00FF41' : '#555500';
   }
-  // NEB status — connected if Microsoft account linked (means Larry's ship can receive)
   if(mEl){
-    mEl.textContent = hasMicrosoft ? 'NEB ✓' : 'NEB ○';
-    mEl.style.color = hasMicrosoft ? '#00FF41' : '#555500';
-    mEl.title       = hasMicrosoft
-      ? 'Nebuchadnezzar online — Larry and team receiving'
-      : 'Nebuchadnezzar offline — connect Microsoft account';
+    if(user && tokenFresh){
+      mEl.textContent='NEB ✓'; mEl.style.color='#00FF41';
+      mEl.title='Nebuchadnezzar online — Larry and team receiving';
+    } else if(user && hasRefresh){
+      mEl.textContent='NEB ~'; mEl.style.color='#886600';
+      mEl.title='Token will refresh on next send';
+    } else if(user){
+      mEl.textContent='NEB ✗'; mEl.style.color='#ff4400';
+      mEl.title='Token expired — tap CONFIG → DISCONNECT → CONNECT MICROSOFT ACCOUNT';
+    } else {
+      mEl.textContent='NEB ○'; mEl.style.color='#555500';
+      mEl.title='Nebuchadnezzar offline — connect Microsoft account';
+    }
   }
 }
 
@@ -1314,7 +1329,7 @@ function outboxCount(){ return outboxGet().length; }
 function outboxUpdateBadge(){
   const n=outboxCount();
   const badge=document.getElementById('outbox-badge');
-  if(badge){ badge.textContent=n>0?n:''; badge.style.display=n>0?'flex':'none'; }
+  if(badge){ badge.textContent=n>0?n+' QUEUED':''; badge.style.display=n>0?'flex':'none'; }
 }
 
 async function outboxFlush(){
@@ -1379,7 +1394,10 @@ async function transmitToSource(){
         {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:md}
       );
       if(resp.ok){ delivered=true; outboxRemove(outboxId); outboxUpdateBadge(); }
-      else{ console.warn('Graph failed:',resp.status); }
+      else{
+        const errBody=await resp.json().catch(()=>({}));
+        console.warn('Graph failed:',resp.status,errBody);
+      }
     }
   }catch(e){ console.warn('Graph error:',e); }
 
@@ -1401,6 +1419,7 @@ function showSentScreen(delivered, filename){
   const titleEl=document.getElementById('sent-title');
   const subtitleEl=document.getElementById('sent-subtitle');
   const deliveryEl=document.getElementById('sent-delivery');
+  const reconnectEl=document.getElementById('sent-reconnect');
   if(delivered){
     titleEl.textContent='SIGNAL TRANSMITTED';
     titleEl.style.color=''; titleEl.style.textShadow='';
@@ -1408,14 +1427,32 @@ function showSentScreen(delivered, filename){
     subtitleEl.style.color='#005500';
     deliveryEl.style.color='#00FF41';
     deliveryEl.textContent='ONEDRIVE DIRECT ✓';
+    if(reconnectEl) reconnectEl.style.display='none';
   } else {
     titleEl.textContent='QUEUED — WILL RETRY';
     titleEl.style.color='#ffaa00';
     titleEl.style.textShadow='0 0 14px #ffaa00';
-    subtitleEl.textContent='SIGNAL SAVED LOCALLY. RECONNECT MICROSOFT TO DELIVER.';
-    subtitleEl.style.color='#886600';
     deliveryEl.style.color='#ffaa00';
     deliveryEl.textContent='PENDING — '+filename;
+    // Diagnose why delivery failed
+    const user=localStorage.getItem('ms_user');
+    const exp=parseInt(localStorage.getItem('ms_exp')||'0');
+    const hasRefresh=!!localStorage.getItem('ms_rt');
+    const tokenExpired=user&&exp<Date.now()&&!hasRefresh;
+    const noToken=!user;
+    if(tokenExpired){
+      subtitleEl.textContent='TOKEN EXPIRED — RECONNECT MICROSOFT TO DELIVER.';
+      subtitleEl.style.color='#ff4400';
+      if(reconnectEl) reconnectEl.style.display='block';
+    } else if(noToken){
+      subtitleEl.textContent='NOT CONNECTED — TAP RECONNECT TO LINK MICROSOFT.';
+      subtitleEl.style.color='#886600';
+      if(reconnectEl) reconnectEl.style.display='block';
+    } else {
+      subtitleEl.textContent='SIGNAL SAVED LOCALLY. WILL RETRY ON NEXT OPEN.';
+      subtitleEl.style.color='#886600';
+      if(reconnectEl) reconnectEl.style.display='none';
+    }
   }
   showScreen('screen-sent');
 }
