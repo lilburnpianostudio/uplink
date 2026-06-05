@@ -1452,8 +1452,9 @@ function showSentScreen(delivered, filename){
     const user=localStorage.getItem('ms_user');
     const exp=parseInt(localStorage.getItem('ms_exp')||'0');
     const hasRefresh=!!localStorage.getItem('ms_rt');
-    const tokenExpired=user&&exp<Date.now()&&!hasRefresh;
-    const noToken=!user;
+    const hasToken=!!(localStorage.getItem('ms_at'));
+    const tokenExpired=hasToken&&exp<Date.now()&&!hasRefresh;
+    const noToken=!hasToken;
     if(tokenExpired){
       subtitleEl.textContent='TOKEN EXPIRED — RECONNECT MICROSOFT TO DELIVER.';
       subtitleEl.style.color='#ff4400';
@@ -1595,8 +1596,8 @@ async function handleMsCallback(){
       localStorage.removeItem('ms_auth_error');
       try{
         const pl=JSON.parse(atob(data.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-        localStorage.setItem('ms_user',pl.preferred_username||pl.email||'connected');
-      }catch{}
+        localStorage.setItem('ms_user',pl.preferred_username||pl.upn||pl.email||pl.unique_name||'connected');
+      }catch{ localStorage.setItem('ms_user','connected'); }
       localStorage.removeItem('ms_v');localStorage.removeItem('ms_s');
       setTimeout(()=>outboxFlush(), 1000);
       return true;
@@ -1655,8 +1656,20 @@ function updateMsStatus(){
     if(disconnectBtn) disconnectBtn.style.display='block';
   } else {
     const authErr=localStorage.getItem('ms_auth_error');
-    statusEl.textContent= authErr ? '✗ AUTH FAILED: '+authErr : '○ NOT CONNECTED';
-    statusEl.style.color= authErr ? '#ff4400' : '#666600';
+    const hasToken=!!(localStorage.getItem('ms_at'));
+    if(authErr){
+      statusEl.textContent='✗ AUTH FAILED: '+authErr;
+      statusEl.style.color='#ff4400';
+    } else if(hasToken){
+      statusEl.textContent='● CONNECTED';
+      statusEl.style.color='#00FF41';
+      if(connectBtn) connectBtn.style.display='none';
+      if(disconnectBtn) disconnectBtn.style.display='block';
+      return;
+    } else {
+      statusEl.textContent='○ NOT CONNECTED';
+      statusEl.style.color='#666600';
+    }
     if(connectBtn) connectBtn.style.display='block';
     if(disconnectBtn) disconnectBtn.style.display='none';
   }
