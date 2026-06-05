@@ -293,6 +293,13 @@
   @keyframes blink      { 0%,100%{opacity:1;} 50%{opacity:0;} }
   @keyframes glow-pulse { 0%,100%{opacity:1;text-shadow:0 0 18px #00FF41,0 0 40px #00FF41;} 50%{opacity:0.6;text-shadow:0 0 8px #00FF41;} }
   @keyframes icon-pulse { 0%,100%{filter:drop-shadow(0 0 10px #00FF41) drop-shadow(0 0 24px rgba(0,255,65,0.5));} 50%{filter:drop-shadow(0 0 20px #00FF41) drop-shadow(0 0 44px rgba(0,255,65,0.8));} }
+  @keyframes led-pulse  { 0%,100%{box-shadow:0 0 4px 1px #00FF41, 0 0 10px 2px rgba(0,255,65,0.5);} 50%{box-shadow:0 0 8px 2px #00FF41, 0 0 20px 4px rgba(0,255,65,0.7);} }
+  .led { display:inline-block; width:8px; height:8px; border-radius:50%; vertical-align:middle; margin-left:3px; }
+  .led-on  { background:#00FF41; animation:led-pulse 2s ease-in-out infinite; }
+  .led-warn{ background:#ffaa00; box-shadow:0 0 5px 1px #ffaa00; }
+  .led-err { background:#ff4400; box-shadow:0 0 5px 1px #ff4400; }
+  .led-off { background:#1a3a1a; box-shadow:none; }
+  @media (pointer: fine) { textarea { cursor: text !important; } }
 </style>
 </head>
 <body>
@@ -911,18 +918,22 @@ function updateStatusBar(){
     cEl.style.color = hasKey ? '#00FF41' : '#555500';
   }
   if(mEl){
-    if(user && tokenFresh){
-      mEl.textContent='NEB ✓'; mEl.style.color='#00FF41';
-      mEl.title='Nebuchadnezzar online — Larry and team receiving';
-    } else if(user && hasRefresh){
-      mEl.textContent='NEB ~'; mEl.style.color='#886600';
-      mEl.title='Token will refresh on next send';
-    } else if(user){
-      mEl.textContent='NEB ✗'; mEl.style.color='#ff4400';
-      mEl.title='Token expired — tap CONFIG → DISCONNECT → CONNECT MICROSOFT ACCOUNT';
+    const hasToken=!!(localStorage.getItem('ms_at'));
+    const connected = (user||hasToken) && tokenFresh;
+    const willRefresh = (user||hasToken) && !tokenFresh && hasRefresh;
+    const expired = (user||hasToken) && !tokenFresh && !hasRefresh;
+    if(connected){
+      mEl.innerHTML='NEB <span class="led led-on" title="Nebuchadnezzar online — Larry receiving"></span>';
+      mEl.style.color='#00FF41';
+    } else if(willRefresh){
+      mEl.innerHTML='NEB <span class="led led-warn" title="Token refreshing on next send"></span>';
+      mEl.style.color='#886600';
+    } else if(expired){
+      mEl.innerHTML='NEB <span class="led led-err" title="Token expired — reconnect Microsoft in CONFIG"></span>';
+      mEl.style.color='#ff4400';
     } else {
-      mEl.textContent='NEB ○'; mEl.style.color='#555500';
-      mEl.title='Nebuchadnezzar offline — connect Microsoft account';
+      mEl.innerHTML='NEB <span class="led led-off" title="Nebuchadnezzar offline — connect Microsoft in CONFIG"></span>';
+      mEl.style.color='#555500';
     }
   }
 }
