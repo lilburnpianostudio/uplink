@@ -155,6 +155,19 @@
     font-family: 'Courier New'; color: #00FF41; line-height: 1.65;
     resize: none; caret-color: transparent; box-shadow: none; cursor: none;
   }
+  @media (pointer: fine) {
+    .phone, .phone * { cursor: auto; }
+    textarea { cursor: text !important; }
+    button, .btn, .menu-btn, .menu-item, .handset-wrap { cursor: pointer !important; }
+  }
+
+  /* ── NEB status glow ── */
+  @keyframes neb-pulse {
+    0%,100% { text-shadow: 0 0 4px #00FF41, 0 0 10px rgba(0,255,65,0.5); }
+    50%      { text-shadow: 0 0 12px #00FF41, 0 0 24px rgba(0,255,65,0.9); }
+  }
+  .neb-online { animation: neb-pulse 2s ease-in-out infinite; }
+
   textarea::placeholder { color: #003300; font-size: 18px; }
   textarea:focus { outline: none; }
   .blink-cursor {
@@ -894,7 +907,7 @@ function toggleHelp(){
 
 function updateStatusBar(){
   const hasKey       = !!getApiKey();
-  const hasMicrosoft = !!localStorage.getItem('ms_user');
+  const hasMicrosoft = !!(localStorage.getItem('ms_user') || localStorage.getItem('ms_at'));
   const cEl = document.getElementById('status-claude');
   const mEl = document.getElementById('status-ms');
   // CLAUDE status
@@ -904,11 +917,13 @@ function updateStatusBar(){
   }
   // NEB status — connected if Microsoft account linked (means Larry's ship can receive)
   if(mEl){
-    mEl.textContent = hasMicrosoft ? 'NEB ✓' : 'NEB ○';
+    mEl.textContent = hasMicrosoft ? 'NEB ●' : 'NEB ○';
     mEl.style.color = hasMicrosoft ? '#00FF41' : '#555500';
     mEl.title       = hasMicrosoft
       ? 'Nebuchadnezzar online — Larry and team receiving'
       : 'Nebuchadnezzar offline — connect Microsoft account';
+    if(hasMicrosoft){ mEl.classList.add('neb-online'); }
+    else { mEl.classList.remove('neb-online'); }
   }
 }
 
@@ -1052,13 +1067,12 @@ let currentSender = 'BEN';
 function updateSenderDisplay() {
   const user = localStorage.getItem('ms_user') || '';
   // Map email/username to display name
-  if (user.toLowerCase().includes('studio@') || user.toLowerCase().includes('benanddinah')) {
+  if (!user || user === 'connected' || user.toLowerCase().includes('studio@') || user.toLowerCase().includes('benanddinah')) {
     currentSender = 'BEN';
-  } else if (user.length > 0) {
-    // Use first part of email as sender name, uppercased
+  } else if (user.includes('@')) {
     currentSender = user.split('@')[0].split('.')[0].toUpperCase();
   } else {
-    currentSender = 'BEN'; // default
+    currentSender = 'BEN';
   }
   const el = document.getElementById('sender-display');
   if (el) el.textContent = currentSender;
@@ -1494,7 +1508,7 @@ async function sendRaw(){
 // ════════════════════════════════════════
 const MS_CLIENT_ID='10cb66fb-13a0-4999-a9fa-dbfa245d0247';
 const MS_TENANT_ID='c12a9d4f-9d34-44de-a16b-3ebae0474c37';
-const MS_REDIRECT='https://lilburnpianostudio.github.io/uplink/';
+const MS_REDIRECT='https://lilburnpianostudio.github.io/uplink/dev.html';
 const MS_SCOPE='Files.ReadWrite offline_access';
 
 function b64url(buf){
@@ -1633,3 +1647,4 @@ window.addEventListener('load', async ()=>{
 </script>
 </body>
 </html>
+
