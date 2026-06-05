@@ -496,15 +496,6 @@
 
   </div>
 
-  <!-- Desk phone at rest — outside all screens, visible on non-write screens -->
-  <div id="desk-phone" style="position:absolute;bottom:0;right:0;z-index:14;opacity:0;pointer-events:none;transition:opacity 0.6s;">
-    <img src="phone-rotary.png" width="180"
-      style="display:block;
-             filter: invert(1) sepia(1) saturate(8) hue-rotate(90deg) brightness(0.75);
-             mix-blend-mode: screen;"
-      alt=""/>
-  </div>
-
   <!-- SCREEN 2: PROCESSING -->
   <div id="screen-matrix-full" class="screen">
     <div class="matrix-takeover">
@@ -590,51 +581,13 @@
       <span id="sent-filename" style="color:#004400;font-size:9px;"></span>
     </div>
 
-    <!-- Cradle phone — tap to pick up -->
-    <div class="cradle-wrap" onclick="newTransmission()" title="Pick up to transmit">
-      <svg width="160" height="180" viewBox="0 0 160 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-
-        <!-- ═══ PHONE BASE / CRADLE ═══ -->
-        <rect x="10" y="110" width="140" height="60" rx="12" stroke="#00FF41" stroke-width="1.5" fill="#000" opacity="0.9"/>
-        <!-- Cradle indents for handset -->
-        <path d="M 30,110 Q 30,96 45,90 L 65,88" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.6"/>
-        <path d="M 130,110 Q 130,96 115,90 L 95,88" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.6"/>
-        <!-- Base details -->
-        <line x1="30" y1="130" x2="130" y2="130" stroke="#00FF41" stroke-width="0.5" opacity="0.2"/>
-        <circle cx="80" cy="145" r="12" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.3"/>
-        <!-- Dial dots on base (decorative) -->
-        <circle cx="60" cy="145" r="2" fill="#00FF41" opacity="0.25"/>
-        <circle cx="100" cy="145" r="2" fill="#00FF41" opacity="0.25"/>
-        <circle cx="80" cy="160" r="1.5" fill="#00FF41" opacity="0.2"/>
-
-        <!-- ═══ HANDSET IN CRADLE (resting at angle) ═══ -->
-        <!-- Handset body - rotated ~-30deg, centered on cradle -->
-        <g transform="translate(80,80) rotate(-28) translate(-28,-72)">
-          <!-- Body -->
-          <path d="M 28,8 C 44,8 50,18 50,30 C 51,40 47,50 44,60 C 41,72 41,82 44,94 C 47,104 51,114 50,124 C 50,136 44,144 28,144 C 12,144 6,136 6,124 C 5,114 9,104 12,94 C 15,82 15,72 12,60 C 9,50 5,40 6,30 C 6,18 12,8 28,8 Z"
-            stroke="#00FF41" stroke-width="1.8" fill="#000"/>
-          <!-- Earpiece -->
-          <circle cx="28" cy="28" r="15" stroke="#00FF41" stroke-width="1" fill="#000" opacity="0.9"/>
-          <circle cx="28" cy="20" r="2" fill="#00FF41" opacity="0.7"/>
-          <circle cx="37" cy="25" r="2" fill="#00FF41" opacity="0.7"/>
-          <circle cx="37" cy="35" r="2" fill="#00FF41" opacity="0.7"/>
-          <circle cx="28" cy="40" r="2" fill="#00FF41" opacity="0.7"/>
-          <circle cx="19" cy="35" r="2" fill="#00FF41" opacity="0.7"/>
-          <circle cx="19" cy="25" r="2" fill="#00FF41" opacity="0.7"/>
-          <circle cx="28" cy="28" r="2.5" fill="#00FF41" opacity="0.6"/>
-          <!-- Mouthpiece -->
-          <circle cx="28" cy="124" r="16" stroke="#00FF41" stroke-width="1.2" fill="#000" opacity="0.95"/>
-          <circle cx="28" cy="110" r="2" fill="#00FF41" opacity="0.8"/>
-          <circle cx="40" cy="117" r="2" fill="#00FF41" opacity="0.8"/>
-          <circle cx="44" cy="124" r="2" fill="#00FF41" opacity="0.8"/>
-          <circle cx="40" cy="131" r="2" fill="#00FF41" opacity="0.8"/>
-          <circle cx="28" cy="138" r="2" fill="#00FF41" opacity="0.8"/>
-          <circle cx="16" cy="131" r="2" fill="#00FF41" opacity="0.8"/>
-          <circle cx="12" cy="124" r="2" fill="#00FF41" opacity="0.8"/>
-          <circle cx="28" cy="124" r="2" fill="#00FF41" opacity="0.6"/>
-        </g>
-
-      </svg>
+    <!-- Rotary phone — tap to pick up -->
+    <div class="cradle-wrap" onclick="newTransmission()" title="Pick up to transmit" style="cursor:pointer;">
+      <img src="phone-rotary.png" width="220"
+        style="display:block; margin:0 auto;
+               filter: grayscale(1) invert(1) contrast(1.3) sepia(1) hue-rotate(75deg) saturate(6) brightness(0.85);
+               mix-blend-mode: screen;"
+        alt=""/>
       <div class="pickup-hint">[ PICK UP TO TRANSMIT ]</div>
     </div>
 
@@ -952,15 +905,12 @@ function showScreen(id){
   currentScreen=id.replace('screen-','');
   document.getElementById('sys-header').style.display=(id==='screen-matrix-full')?'none':'';
   if(id==='screen-write') document.getElementById('user-input').focus();
-  // Handset: active on write screen; desk phone shown at rest on other screens
+  // Handset: visible only on write screen
   const hw = document.getElementById('handset-wrap');
-  const dp = document.getElementById('desk-phone');
-  if(id === 'screen-write'){
-    if(hw){ hw.style.opacity='1'; hw.style.transform='rotate(-15deg)'; hw.style.pointerEvents='auto'; }
-    if(dp){ dp.style.opacity='0'; dp.style.pointerEvents='none'; }
-  } else {
-    if(hw){ hw.style.opacity='0'; hw.style.pointerEvents='none'; }
-    if(dp){ dp.style.opacity='1'; }
+  if(hw){
+    hw.style.opacity = (id === 'screen-write') ? '1' : '0';
+    hw.style.transform = 'rotate(-15deg)';
+    hw.style.pointerEvents = (id === 'screen-write') ? 'auto' : 'none';
   }
 }
 
