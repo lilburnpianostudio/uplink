@@ -156,6 +156,14 @@
     resize: none; caret-color: transparent; box-shadow: none; cursor: none;
   }
   @media (pointer: fine) { textarea { cursor: text !important; } }
+
+  /* ── NEB status glow ── */
+  @keyframes neb-pulse {
+    0%,100% { text-shadow: 0 0 4px #00FF41, 0 0 10px rgba(0,255,65,0.5); }
+    50%      { text-shadow: 0 0 12px #00FF41, 0 0 24px rgba(0,255,65,0.9); }
+  }
+  .neb-online { animation: neb-pulse 2s ease-in-out infinite; }
+
   textarea::placeholder { color: #003300; font-size: 18px; }
   textarea:focus { outline: none; }
   .blink-cursor {
@@ -905,11 +913,13 @@ function updateStatusBar(){
   }
   // NEB status — connected if Microsoft account linked (means Larry's ship can receive)
   if(mEl){
-    mEl.textContent = hasMicrosoft ? 'NEB ✓' : 'NEB ○';
+    mEl.textContent = hasMicrosoft ? 'NEB ●' : 'NEB ○';
     mEl.style.color = hasMicrosoft ? '#00FF41' : '#555500';
     mEl.title       = hasMicrosoft
       ? 'Nebuchadnezzar online — Larry and team receiving'
       : 'Nebuchadnezzar offline — connect Microsoft account';
+    if(hasMicrosoft){ mEl.classList.add('neb-online'); }
+    else { mEl.classList.remove('neb-online'); }
   }
 }
 
