@@ -155,7 +155,11 @@
     font-family: 'Courier New'; color: #00FF41; line-height: 1.65;
     resize: none; caret-color: transparent; box-shadow: none; cursor: none;
   }
-  @media (pointer: fine) { textarea { cursor: text !important; } }
+  @media (pointer: fine) {
+    .phone, .phone * { cursor: auto; }
+    textarea { cursor: text !important; }
+    button, .btn, .menu-btn, .menu-item, .handset-wrap { cursor: pointer !important; }
+  }
 
   /* ── NEB status glow ── */
   @keyframes neb-pulse {
