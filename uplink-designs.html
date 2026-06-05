@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UPLINK Design Options</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #000; font-family: 'Courier New', monospace; color: #00FF41; padding: 40px 24px; }
+  h2 { font-size: 11px; letter-spacing: 4px; color: #005500; margin-bottom: 24px; border-bottom: 1px solid #002200; padding-bottom: 8px; }
+  h3 { font-size: 10px; letter-spacing: 3px; color: #00aa33; margin-bottom: 10px; }
+  .section { margin-bottom: 60px; }
+  .row { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-end; }
+  .option { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .label { font-size: 9px; letter-spacing: 2px; color: #004400; }
+  .badge { font-size: 8px; letter-spacing: 1px; color: #003300; margin-top: 4px; font-style: italic; }
+  .box {
+    background: #000;
+    border: 1px solid #002800;
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .phone-box {
+    background: #000;
+    border: 1px solid #002800;
+    border-radius: 12px;
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  @keyframes glow-pulse { 0%,100%{opacity:0.7} 50%{opacity:1} }
+  .glow { animation: glow-pulse 2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<h2>// UPLINK DESIGN OPTIONS — 2026-06-05 //</h2>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- SECTION 1: MENU BUTTON OPTIONS -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="section">
+  <h3>MENU ICON OPTIONS</h3>
+  <div class="row">
+
+    <!-- A: Three stacked cartridges -->
+    <div class="option">
+      <div class="box">
+        <svg width="36" height="28" viewBox="0 0 36 28" fill="none">
+          <!-- Cartridge 1 -->
+          <rect x="1" y="1" width="14" height="6" rx="1.5" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.08)"/>
+          <circle cx="4.5" cy="4" r="1.5" stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.6"/>
+          <line x1="15" y1="1" x2="15" y2="7" stroke="#00FF41" stroke-width="0.8" opacity="0.5"/>
+          <path d="M15,1 L22,1 Q28,2.5 28,4 Q28,5.5 22,7 L15,7Z" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.15)"/>
+          <circle cx="27" cy="4" r="1.5" fill="#00FF41" opacity="0.9"/>
+          <!-- Cartridge 2 -->
+          <rect x="1" y="11" width="14" height="6" rx="1.5" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.08)"/>
+          <circle cx="4.5" cy="14" r="1.5" stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.6"/>
+          <line x1="15" y1="11" x2="15" y2="17" stroke="#00FF41" stroke-width="0.8" opacity="0.5"/>
+          <path d="M15,11 L22,11 Q28,12.5 28,14 Q28,15.5 22,17 L15,17Z" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.15)"/>
+          <circle cx="27" cy="14" r="1.5" fill="#00FF41" opacity="0.9"/>
+          <!-- Cartridge 3 -->
+          <rect x="1" y="21" width="14" height="6" rx="1.5" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.08)"/>
+          <circle cx="4.5" cy="24" r="1.5" stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.6"/>
+          <line x1="15" y1="21" x2="15" y2="27" stroke="#00FF41" stroke-width="0.8" opacity="0.5"/>
+          <path d="M15,21 L22,21 Q28,22.5 28,24 Q28,25.5 22,27 L15,27Z" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.15)"/>
+          <circle cx="27" cy="24" r="1.5" fill="#00FF41" opacity="0.9"/>
+        </svg>
+      </div>
+      <div class="label">A — THREE ROUNDS</div>
+      <div class="badge">classic hamburger · bullets stacked</div>
+    </div>
+
+    <!-- B: Three dots (rotary dial speaker pattern) -->
+    <div class="option">
+      <div class="box">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <!-- Three concentric-dot clusters (like phone cups) -->
+          <circle cx="14" cy="5" r="3.5" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.1)"/>
+          <circle cx="14" cy="5" r="1.5" fill="#00FF41" opacity="0.9"/>
+          <circle cx="14" cy="14" r="3.5" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.1)"/>
+          <circle cx="14" cy="14" r="1.5" fill="#00FF41" opacity="0.9"/>
+          <circle cx="14" cy="23" r="3.5" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.1)"/>
+          <circle cx="14" cy="23" r="1.5" fill="#00FF41" opacity="0.9"/>
+          <!-- Connecting line -->
+          <line x1="14" y1="8.5" x2="14" y2="10.5" stroke="#00FF41" stroke-width="0.6" opacity="0.3"/>
+          <line x1="14" y1="17.5" x2="14" y2="19.5" stroke="#00FF41" stroke-width="0.6" opacity="0.3"/>
+        </svg>
+      </div>
+      <div class="label">B — PHONE CUPS</div>
+      <div class="badge">speaker holes · matches handset aesthetic</div>
+    </div>
+
+    <!-- C: Rotary dial arc -->
+    <div class="option">
+      <div class="box">
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+          <!-- Outer ring -->
+          <circle cx="15" cy="15" r="13" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.05)" opacity="0.8"/>
+          <!-- Center -->
+          <circle cx="15" cy="15" r="3" stroke="#00FF41" stroke-width="0.8" fill="none" opacity="0.6"/>
+          <circle cx="15" cy="15" r="1.2" fill="#00FF41" opacity="0.9"/>
+          <!-- Dial holes — 7 holes in arc (like real rotary dial) -->
+          <circle cx="15" cy="3.5" r="2" fill="#00FF41" opacity="0.85"/>
+          <circle cx="23.5" cy="7" r="2" fill="#00FF41" opacity="0.85"/>
+          <circle cx="27" cy="15" r="2" fill="#00FF41" opacity="0.85"/>
+          <circle cx="23.5" cy="23" r="2" fill="#00FF41" opacity="0.85"/>
+          <circle cx="15" cy="26.5" r="2" fill="#00FF41" opacity="0.85"/>
+          <circle cx="6.5" cy="23" r="2" fill="#00FF41" opacity="0.85"/>
+          <circle cx="3" cy="15" r="2" fill="#00FF41" opacity="0.85"/>
+        </svg>
+      </div>
+      <div class="label">C — ROTARY DIAL</div>
+      <div class="badge">the Matrix phone dial · most on-theme</div>
+    </div>
+
+    <!-- D: Current (refined) — single elongated bullet -->
+    <div class="option">
+      <div class="box">
+        <svg width="38" height="16" viewBox="0 0 38 16" fill="none">
+          <rect x="1" y="4" width="18" height="8" rx="1.5" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.1)"/>
+          <circle cx="5" cy="8" r="2.2" stroke="#00FF41" stroke-width="0.8" fill="none" opacity="0.7"/>
+          <line x1="19" y1="4" x2="19" y2="12" stroke="#00FF41" stroke-width="1" opacity="0.6"/>
+          <path d="M 19,4 L 30,4 Q 37,6 37,8 Q 37,10 30,12 L 19,12 Z" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.18)"/>
+          <circle cx="36" cy="8" r="2" fill="#00FF41" opacity="0.9"/>
+        </svg>
+      </div>
+      <div class="label">D — CURRENT (SINGLE)</div>
+      <div class="badge">existing design · one shell</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- SECTION 2: PHONE AT REST — SIGNAL TRANSMITTED SCREEN -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="section">
+  <h3>PHONE AT REST — SIGNAL TRANSMITTED SCREEN</h3>
+  <p style="font-size:9px;color:#003300;letter-spacing:2px;margin-bottom:24px;">
+    REPLACES INTERACTIVE HANDSET · SHOWS AFTER SIGNAL IS SENT · "PICK UP TO SEND ANOTHER"
+  </p>
+  <div class="row">
+
+    <!-- Option 1: Rotary desk phone — top-down view, handset in cradle -->
+    <div class="option">
+      <div class="phone-box">
+        <svg width="180" height="160" viewBox="0 0 180 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="base1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#002200"/>
+              <stop offset="100%" stop-color="#000a00"/>
+            </linearGradient>
+          </defs>
+          <!-- Phone base body -->
+          <rect x="10" y="30" width="160" height="120" rx="12" stroke="#00FF41" stroke-width="1.2" fill="url(#base1)" opacity="0.95"/>
+          <!-- Base shadow/depth -->
+          <rect x="12" y="32" width="156" height="116" rx="10" stroke="#004400" stroke-width="0.5" fill="none" opacity="0.4"/>
+
+          <!-- Handset cradle bumps (top of phone) -->
+          <ellipse cx="30" cy="35" rx="14" ry="10" stroke="#00FF41" stroke-width="1" fill="#001500" opacity="0.9"/>
+          <ellipse cx="150" cy="35" rx="14" ry="10" stroke="#00FF41" stroke-width="1" fill="#001500" opacity="0.9"/>
+          <!-- Cradle channel between bumps -->
+          <path d="M44,33 Q90,26 136,33" stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.3"/>
+          <path d="M44,37 Q90,30 136,37" stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.3"/>
+
+          <!-- Handset resting in cradle -->
+          <path d="M22,34 C18,34 14,37 14,42 C14,47 18,50 22,50
+            C28,50 32,48 40,47 C55,46 110,46 125,47
+            C133,48 138,50 158,50 C162,50 166,47 166,42
+            C166,37 162,34 158,34 C138,34 133,36 125,37
+            C110,38 55,38 40,37 C32,36 28,34 22,34 Z"
+            stroke="#00FF41" stroke-width="1" fill="#001800" opacity="0.95"/>
+          <!-- Handset cup left -->
+          <circle cx="26" cy="42" r="9" stroke="#00FF41" stroke-width="0.8" fill="#001000" opacity="0.9"/>
+          <circle cx="26" cy="42" r="5" stroke="#00FF41" stroke-width="0.5" fill="none" opacity="0.4"/>
+          <circle cx="26" cy="38" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="30" cy="41" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="30" cy="45" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="26" cy="46" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="22" cy="45" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="22" cy="41" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <!-- Handset cup right -->
+          <circle cx="154" cy="42" r="9" stroke="#00FF41" stroke-width="0.8" fill="#001000" opacity="0.9"/>
+          <circle cx="154" cy="42" r="5" stroke="#00FF41" stroke-width="0.5" fill="none" opacity="0.4"/>
+          <circle cx="154" cy="38" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="158" cy="41" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="158" cy="45" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="154" cy="46" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="150" cy="45" r="1.2" fill="#00FF41" opacity="0.6"/>
+          <circle cx="150" cy="41" r="1.2" fill="#00FF41" opacity="0.6"/>
+
+          <!-- Rotary dial -->
+          <circle cx="70" cy="100" r="38" stroke="#00FF41" stroke-width="1.2" fill="#001000" opacity="0.95"/>
+          <circle cx="70" cy="100" r="30" stroke="#00FF41" stroke-width="0.6" fill="none" opacity="0.4"/>
+          <circle cx="70" cy="100" r="8" stroke="#00FF41" stroke-width="0.8" fill="#000c00" opacity="0.9"/>
+          <circle cx="70" cy="100" r="3" fill="#00FF41" opacity="0.7"/>
+          <!-- Dial holes (10 holes) -->
+          <circle cx="70" cy="64" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <circle cx="89" cy="69" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <circle cx="102" cy="84" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <circle cx="104" cy="103" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <circle cx="93" cy="120" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <circle cx="73" cy="130" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <circle cx="52" cy="125" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <circle cx="40" cy="112" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <circle cx="38" cy="93" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <circle cx="48" cy="74" r="3.5" stroke="#00FF41" stroke-width="0.8" fill="#000500" opacity="0.9"/>
+          <!-- Dial stop finger guard -->
+          <path d="M96,68 A30,30 0 0,1 100,100" stroke="#00FF41" stroke-width="1.5" fill="none" opacity="0.5"/>
+
+          <!-- Speaker grille (right side of base) -->
+          <line x1="130" y1="72" x2="165" y2="72" stroke="#00FF41" stroke-width="0.7" opacity="0.3"/>
+          <line x1="130" y1="78" x2="165" y2="78" stroke="#00FF41" stroke-width="0.7" opacity="0.3"/>
+          <line x1="130" y1="84" x2="165" y2="84" stroke="#00FF41" stroke-width="0.7" opacity="0.3"/>
+          <line x1="130" y1="90" x2="165" y2="90" stroke="#00FF41" stroke-width="0.7" opacity="0.3"/>
+          <line x1="130" y1="96" x2="165" y2="96" stroke="#00FF41" stroke-width="0.7" opacity="0.3"/>
+
+          <!-- Cord exit bottom-left -->
+          <path d="M20,145 C14,150 10,155 8,162" stroke="#00FF41" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+          <path d="M8,162 C6,167 8,170 5,175" stroke="#00FF41" stroke-width="1.2" fill="none" opacity="0.2" stroke-linecap="round"/>
+
+          <!-- Status label -->
+          <text x="90" y="155" text-anchor="middle" font-family="'Courier New',monospace" font-size="7" fill="#003300" letter-spacing="3">STANDING BY</text>
+        </svg>
+      </div>
+      <div class="label">1 — DESK PHONE TOP-DOWN</div>
+      <div class="badge">full rotary phone · handset in cradle · dial visible</div>
+    </div>
+
+    <!-- Option 2: Side profile — more dramatic, handset resting -->
+    <div class="option">
+      <div class="phone-box">
+        <svg width="180" height="130" viewBox="0 0 180 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="base2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#003300"/>
+              <stop offset="100%" stop-color="#000800"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Base shadow -->
+          <ellipse cx="90" cy="118" rx="75" ry="8" fill="#001500" opacity="0.6"/>
+
+          <!-- Phone body — side/3/4 view -->
+          <path d="M15,55 L165,55 Q172,55 172,62 L172,108 Q172,115 165,115 L15,115 Q8,115 8,108 L8,62 Q8,55 15,55Z"
+            stroke="#00FF41" stroke-width="1.2" fill="url(#base2)"/>
+
+          <!-- Front face panel -->
+          <rect x="16" y="63" width="148" height="44" rx="4" stroke="#004400" stroke-width="0.6" fill="none" opacity="0.4"/>
+
+          <!-- Cradle humps on top -->
+          <ellipse cx="35" cy="55" rx="18" ry="12" stroke="#00FF41" stroke-width="1" fill="#001200"/>
+          <ellipse cx="145" cy="55" rx="18" ry="12" stroke="#00FF41" stroke-width="1" fill="#001200"/>
+
+          <!-- Handset in cradle (profile — seen from side, slight angle) -->
+          <path d="M22,48 C16,48 12,51 12,55 C12,59 16,62 22,62
+            C30,62 36,60 50,59 C72,58 108,58 130,59
+            C144,60 150,62 158,62 C164,62 168,59 168,55
+            C168,51 164,48 158,48 C150,48 144,50 130,51
+            C108,52 72,52 50,51 C36,50 30,48 22,48Z"
+            stroke="#00FF41" stroke-width="1.2" fill="#002000"/>
+          <!-- Earpiece left -->
+          <circle cx="26" cy="55" r="10" stroke="#00FF41" stroke-width="0.9" fill="#001500"/>
+          <circle cx="26" cy="52" r="1.8" fill="#00FF41" opacity="0.7"/>
+          <circle cx="30" cy="55" r="1.8" fill="#00FF41" opacity="0.7"/>
+          <circle cx="26" cy="58" r="1.8" fill="#00FF41" opacity="0.7"/>
+          <circle cx="22" cy="55" r="1.8" fill="#00FF41" opacity="0.7"/>
+          <!-- Mouthpiece right -->
+          <circle cx="154" cy="55" r="10" stroke="#00FF41" stroke-width="0.9" fill="#001500"/>
+          <circle cx="154" cy="52" r="1.8" fill="#00FF41" opacity="0.7"/>
+          <circle cx="158" cy="55" r="1.8" fill="#00FF41" opacity="0.7"/>
+          <circle cx="154" cy="58" r="1.8" fill="#00FF41" opacity="0.7"/>
+          <circle cx="150" cy="55" r="1.8" fill="#00FF41" opacity="0.7"/>
+
+          <!-- Rotary dial on front face -->
+          <circle cx="60" cy="85" r="22" stroke="#00FF41" stroke-width="1" fill="#001000"/>
+          <circle cx="60" cy="85" r="16" stroke="#00FF41" stroke-width="0.5" fill="none" opacity="0.3"/>
+          <circle cx="60" cy="85" r="5" stroke="#00FF41" stroke-width="0.7" fill="#000800"/>
+          <circle cx="60" cy="85" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="60" cy="65" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+          <circle cx="73" cy="70" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+          <circle cx="80" cy="80" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+          <circle cx="79" cy="93" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+          <circle cx="71" cy="103" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+          <circle cx="58" cy="107" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+          <circle cx="45" cy="102" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+          <circle cx="38" cy="91" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+          <circle cx="39" cy="78" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+          <circle cx="47" cy="67" r="2.5" stroke="#00FF41" stroke-width="0.7" fill="#000500"/>
+
+          <!-- Speaker bars -->
+          <line x1="105" y1="72" x2="165" y2="72" stroke="#00FF41" stroke-width="0.7" opacity="0.25"/>
+          <line x1="105" y1="78" x2="165" y2="78" stroke="#00FF41" stroke-width="0.7" opacity="0.25"/>
+          <line x1="105" y1="84" x2="165" y2="84" stroke="#00FF41" stroke-width="0.7" opacity="0.25"/>
+          <line x1="105" y1="90" x2="165" y2="90" stroke="#00FF41" stroke-width="0.7" opacity="0.25"/>
+          <line x1="105" y1="96" x2="165" y2="96" stroke="#00FF41" stroke-width="0.7" opacity="0.25"/>
+
+          <!-- Cord exits bottom -->
+          <path d="M18,115 C14,120 12,124 10,130" stroke="#00FF41" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+
+          <!-- Glow ring pulsing around cradle — signals "waiting to be picked up" -->
+          <ellipse cx="90" cy="55" rx="76" ry="16" stroke="#00FF41" stroke-width="0.8" fill="none" opacity="0.0">
+            <animate attributeName="opacity" values="0;0.35;0" dur="3s" repeatCount="indefinite"/>
+          </ellipse>
+
+          <text x="90" y="128" text-anchor="middle" font-family="'Courier New',monospace" font-size="7" fill="#003300" letter-spacing="3">STANDING BY</text>
+        </svg>
+      </div>
+      <div class="label">2 — DESK PHONE 3/4 VIEW</div>
+      <div class="badge">dramatic angle · pulsing cradle glow · "pick up" feel</div>
+    </div>
+
+    <!-- Option 3: Minimalist — just the cradle silhouette + resting handset outline -->
+    <div class="option">
+      <div class="phone-box">
+        <svg width="160" height="100" viewBox="0 0 160 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Pure line-art minimal style -->
+
+          <!-- Cradle base (thin rectangle) -->
+          <rect x="20" y="60" width="120" height="28" rx="6" stroke="#00FF41" stroke-width="1" fill="rgba(0,255,65,0.03)"/>
+
+          <!-- Cradle notches -->
+          <path d="M20,68 L8,68 Q4,68 4,72 Q4,76 8,76 L20,76" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.6"/>
+          <path d="M140,68 L152,68 Q156,68 156,72 Q156,76 152,76 L140,76" stroke="#00FF41" stroke-width="1" fill="none" opacity="0.6"/>
+
+          <!-- Handset resting in cradle — banana shape, horizontal -->
+          <path d="M 18,55 C 8,55 4,60 4,65 C 4,70 8,75 18,75
+            C 26,75 32,72 42,71 C 56,70 104,70 118,71
+            C 128,72 134,75 142,75 C 152,75 156,70 156,65
+            C 156,60 152,55 142,55 C 134,55 128,58 118,59
+            C 104,60 56,60 42,59 C 32,58 26,55 18,55 Z"
+            stroke="#00FF41" stroke-width="1.2" fill="rgba(0,255,65,0.06)"/>
+
+          <!-- Earpiece -->
+          <circle cx="22" cy="65" r="11" stroke="#00FF41" stroke-width="0.9" fill="rgba(0,255,65,0.04)"/>
+          <circle cx="22" cy="62" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="27" cy="65" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="22" cy="68" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="17" cy="65" r="2" fill="#00FF41" opacity="0.7"/>
+
+          <!-- Mouthpiece -->
+          <circle cx="138" cy="65" r="11" stroke="#00FF41" stroke-width="0.9" fill="rgba(0,255,65,0.04)"/>
+          <circle cx="138" cy="62" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="143" cy="65" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="138" cy="68" r="2" fill="#00FF41" opacity="0.7"/>
+          <circle cx="133" cy="65" r="2" fill="#00FF41" opacity="0.7"/>
+
+          <!-- Pickup prompt -->
+          <text x="80" y="18" text-anchor="middle" font-family="'Courier New',monospace" font-size="8" fill="#00FF41" letter-spacing="3" opacity="0.8">SIGNAL SENT</text>
+          <text x="80" y="34" text-anchor="middle" font-family="'Courier New',monospace" font-size="7" fill="#003300" letter-spacing="2">PICK UP TO TRANSMIT AGAIN</text>
+
+          <!-- Small pulse dot below -->
+          <circle cx="80" cy="48" r="2.5" fill="#00FF41" opacity="0.6">
+            <animate attributeName="opacity" values="0.6;1;0.6" dur="1.8s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="80" cy="48" r="5" stroke="#00FF41" stroke-width="0.8" fill="none" opacity="0">
+            <animate attributeName="opacity" values="0;0.4;0" dur="1.8s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
+      </div>
+      <div class="label">3 — MINIMAL / FLAT</div>
+      <div class="badge">handset only · cradle implied · "pick up" prompt</div>
+    </div>
+
+  </div>
+</div>
+
+<div style="margin-top:40px;font-size:8px;color:#002200;letter-spacing:3px;">
+  // PICK A + PICK A NUMBER (or mix) TO BUILD INTO DEV //
+</div>
+
+</body>
+</html>
