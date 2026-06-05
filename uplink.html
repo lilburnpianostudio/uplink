@@ -1041,11 +1041,11 @@ function handsetTouchStart(e) {
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const relX = (clientX - rect.left) / rect.width; // 0=left, 1=right
 
-  if (relX > 0.55) {
-    // MOUTHPIECE (right 45%) — tap to dictate
+  if (relX <= 0.55) {
+    // MOUTHPIECE (visual left after flip) — tap to dictate
     startDictation();
   } else {
-    // EARPIECE (left 55%) — tap = raw send, long-press = Claude
+    // EARPIECE (visual right after flip) — tap = raw send, long-press = Claude polish
     longPressTimer = setTimeout(() => {
       longPressTimer = null;
       // Long press — Claude polish
