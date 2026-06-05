@@ -1326,6 +1326,20 @@ function outboxAdd(item){ const q=outboxGet(); q.push(item); outboxSave(q); }
 function outboxRemove(id){ outboxSave(outboxGet().filter(i=>i.id!==id)); }
 function outboxCount(){ return outboxGet().length; }
 
+function showToast(msg){
+  let t=document.getElementById('uplink-toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='uplink-toast';
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#ffaa00;color:#000;font-family:monospace;font-size:11px;font-weight:700;letter-spacing:1px;padding:10px 18px;border-radius:6px;z-index:9999;max-width:85vw;text-align:center;pointer-events:none;transition:opacity .4s';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;
+  t.style.opacity='1';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>{ t.style.opacity='0'; }, 4000);
+}
+
 function outboxUpdateBadge(){
   const n=outboxCount();
   const badge=document.getElementById('outbox-badge');
@@ -1510,16 +1524,20 @@ async function sendRaw(){
     }
   }
 
-  // Option C: iOS Share Sheet
+  // Option C: Share Sheet (mobile only) or clipboard fallback
   if(!sent){
-    try{
-      const file=new File([md],filename,{type:'text/plain'});
-      await navigator.share({title:'Raw Signal '+ts,files:[file]});
-      sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
-    }catch(e){
+    const isMobile=/iPhone|iPad|Android/i.test(navigator.userAgent);
+    if(isMobile && navigator.share){
+      try{
+        const file=new File([md],filename,{type:'text/plain'});
+        await navigator.share({title:'Raw Signal '+ts,files:[file]});
+        sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
+      }catch(e){ /* fall through to clipboard */ }
+    }
+    if(!sent){
       try{await navigator.clipboard.writeText(md);}catch{}
       deliveryMethod='CLIPBOARD — paste manually';
-      alert('Signal copied. Paste into Team-Inbox as '+filename);
+      showToast('SIGNAL COPIED — paste into Team-Inbox as '+filename);
     }
   }
 
@@ -1574,16 +1592,23 @@ async function handleMsCallback(){
       localStorage.setItem('ms_at',data.access_token);
       localStorage.setItem('ms_rt',data.refresh_token||'');
       localStorage.setItem('ms_exp',Date.now()+(data.expires_in*1000));
+      localStorage.removeItem('ms_auth_error');
       try{
         const pl=JSON.parse(atob(data.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
         localStorage.setItem('ms_user',pl.preferred_username||pl.email||'connected');
       }catch{}
       localStorage.removeItem('ms_v');localStorage.removeItem('ms_s');
-      // Flush any queued signals now that we have a fresh token
       setTimeout(()=>outboxFlush(), 1000);
       return true;
+    } else {
+      const errMsg=(data.error_description||data.error||'unknown token exchange error');
+      localStorage.setItem('ms_auth_error', errMsg);
+      console.error('Token exchange failed:',data);
     }
-  }catch(e){console.error('Token exchange error:',e);}
+  }catch(e){
+    localStorage.setItem('ms_auth_error','network error: '+e.message);
+    console.error('Token exchange error:',e);
+  }
   return false;
 }
 
@@ -1629,8 +1654,9 @@ function updateMsStatus(){
     if(connectBtn) connectBtn.style.display='none';
     if(disconnectBtn) disconnectBtn.style.display='block';
   } else {
-    statusEl.textContent='○ NOT CONNECTED';
-    statusEl.style.color='#666600';
+    const authErr=localStorage.getItem('ms_auth_error');
+    statusEl.textContent= authErr ? '✗ AUTH FAILED: '+authErr : '○ NOT CONNECTED';
+    statusEl.style.color= authErr ? '#ff4400' : '#666600';
     if(connectBtn) connectBtn.style.display='block';
     if(disconnectBtn) disconnectBtn.style.display='none';
   }
