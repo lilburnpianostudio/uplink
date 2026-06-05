@@ -293,13 +293,6 @@
   @keyframes blink      { 0%,100%{opacity:1;} 50%{opacity:0;} }
   @keyframes glow-pulse { 0%,100%{opacity:1;text-shadow:0 0 18px #00FF41,0 0 40px #00FF41;} 50%{opacity:0.6;text-shadow:0 0 8px #00FF41;} }
   @keyframes icon-pulse { 0%,100%{filter:drop-shadow(0 0 10px #00FF41) drop-shadow(0 0 24px rgba(0,255,65,0.5));} 50%{filter:drop-shadow(0 0 20px #00FF41) drop-shadow(0 0 44px rgba(0,255,65,0.8));} }
-  @keyframes led-pulse  { 0%,100%{text-shadow:0 0 4px #00FF41,0 0 10px rgba(0,255,65,0.5);} 50%{text-shadow:0 0 10px #00FF41,0 0 22px rgba(0,255,65,0.8);} }
-  .led { font-size:9px; vertical-align:middle; margin-left:2px; font-style:normal; }
-  .led-on  { color:#00FF41; animation:led-pulse 2s ease-in-out infinite; }
-  .led-warn{ color:#ffaa00; text-shadow:0 0 5px #ffaa00; }
-  .led-err { color:#ff4400; text-shadow:0 0 5px #ff4400; }
-  .led-off { color:#1a3a1a; text-shadow:none; }
-  @media (pointer: fine) { textarea { cursor: text !important; } }
 </style>
 </head>
 <body>
@@ -318,7 +311,7 @@
       <span id="status-claude" style="color:#555500;">CLAUDE ○</span>
       <span id="sys-time">--:--</span>
       <span id="status-ms" style="color:#555500;">MS ○</span>
-      <span id="outbox-badge" onclick="outboxFlush()" title="Tap to retry delivery" style="display:none;background:#ffaa00;color:#000;font-size:9px;font-weight:700;border-radius:10px;padding:1px 6px;letter-spacing:1px;margin-left:4px;cursor:pointer;"></span>
+      <span id="outbox-badge" style="display:none;background:#ffaa00;color:#000;font-size:9px;font-weight:700;border-radius:10px;padding:1px 6px;letter-spacing:1px;margin-left:4px;"></span>
     </div>
     <div class="app-title-bar">
       <div>
@@ -399,7 +392,7 @@
           ontouchend="handsetTouchEnd(event)"
           onmousedown="handsetTouchStart(event)"
           onmouseup="handsetTouchEnd(event)">
-          <svg width="160" height="86" viewBox="0 0 160 86" fill="none" xmlns="http://www.w3.org/2000/svg" style="transform:scaleX(-1);">
+          <svg width="160" height="86" viewBox="0 0 160 86" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="hbody" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%"   stop-color="#00FF41" stop-opacity="0.14"/>
@@ -579,14 +572,9 @@
     <div id="sent-subtitle" style="font-size:9px;color:#005500;letter-spacing:3px;margin-bottom:6px;">MESSAGE RECEIVED. STAND BY.</div>
 
     <!-- File info -->
-    <div style="font-size:10px;font-family:'Courier New';margin-bottom:16px;text-align:center;letter-spacing:0.5px;">
+    <div style="font-size:10px;font-family:'Courier New';margin-bottom:28px;text-align:center;letter-spacing:0.5px;">
       <span id="sent-delivery" style="color:#006600;font-weight:700;"></span><br>
       <span id="sent-filename" style="color:#004400;font-size:9px;"></span>
-    </div>
-
-    <!-- Reconnect prompt — shown when delivery fails due to expired token -->
-    <div id="sent-reconnect" style="display:none;margin-bottom:16px;">
-      <button class="btn btn-green" onclick="toggleSettings()" style="font-size:11px;padding:12px;width:220px;">[ RECONNECT MICROSOFT ]</button>
     </div>
 
     <!-- Cradle phone — tap to pick up -->
@@ -885,8 +873,7 @@ function saveSetup(){
 }
 function saveSettings(){
   const k=document.getElementById('settings-api-key').value.trim();
-  const wEl=document.getElementById('settings-webhook');
-  const w=wEl?wEl.value.trim():'';
+  const w=document.getElementById('settings-webhook').value.trim();
   if(k)localStorage.setItem('uplink_api_key',k);
   if(w)localStorage.setItem('uplink_webhook_url',w);
   toggleSettings();
@@ -906,35 +893,22 @@ function toggleHelp(){
 }
 
 function updateStatusBar(){
-  const hasKey     = !!getApiKey();
-  const user       = localStorage.getItem('ms_user');
-  const exp        = parseInt(localStorage.getItem('ms_exp')||'0');
-  const hasRefresh = !!localStorage.getItem('ms_rt');
-  const tokenFresh = exp > Date.now() + 60000;
+  const hasKey       = !!getApiKey();
+  const hasMicrosoft = !!localStorage.getItem('ms_user');
   const cEl = document.getElementById('status-claude');
   const mEl = document.getElementById('status-ms');
+  // CLAUDE status
   if(cEl){
     cEl.textContent = hasKey ? 'CLAUDE ✓' : 'CLAUDE ○';
     cEl.style.color = hasKey ? '#00FF41' : '#555500';
   }
+  // NEB status — connected if Microsoft account linked (means Larry's ship can receive)
   if(mEl){
-    const hasToken=!!(localStorage.getItem('ms_at'));
-    const connected = (user||hasToken) && tokenFresh;
-    const willRefresh = (user||hasToken) && !tokenFresh && hasRefresh;
-    const expired = (user||hasToken) && !tokenFresh && !hasRefresh;
-    if(connected){
-      mEl.innerHTML='NEB <i class="led led-on" title="Nebuchadnezzar online — Larry receiving">●</i>';
-      mEl.style.color='#00FF41';
-    } else if(willRefresh){
-      mEl.innerHTML='NEB <i class="led led-warn" title="Token refreshing on next send">●</i>';
-      mEl.style.color='#886600';
-    } else if(expired){
-      mEl.innerHTML='NEB <i class="led led-err" title="Token expired — reconnect Microsoft in CONFIG">●</i>';
-      mEl.style.color='#ff4400';
-    } else {
-      mEl.innerHTML='NEB <i class="led led-off" title="Nebuchadnezzar offline — connect Microsoft in CONFIG">●</i>';
-      mEl.style.color='#555500';
-    }
+    mEl.textContent = hasMicrosoft ? 'NEB ✓' : 'NEB ○';
+    mEl.style.color = hasMicrosoft ? '#00FF41' : '#555500';
+    mEl.title       = hasMicrosoft
+      ? 'Nebuchadnezzar online — Larry and team receiving'
+      : 'Nebuchadnezzar offline — connect Microsoft account';
   }
 }
 
@@ -1041,11 +1015,11 @@ function handsetTouchStart(e) {
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const relX = (clientX - rect.left) / rect.width; // 0=left, 1=right
 
-  if (relX <= 0.55) {
-    // MOUTHPIECE (visual left after flip) — tap to dictate
+  if (relX > 0.55) {
+    // MOUTHPIECE (right 45%) — tap to dictate
     startDictation();
   } else {
-    // EARPIECE (visual right after flip) — tap = raw send, long-press = Claude polish
+    // EARPIECE (left 55%) — tap = raw send, long-press = Claude
     longPressTimer = setTimeout(() => {
       longPressTimer = null;
       // Long press — Claude polish
@@ -1078,12 +1052,13 @@ let currentSender = 'BEN';
 function updateSenderDisplay() {
   const user = localStorage.getItem('ms_user') || '';
   // Map email/username to display name
-  if (!user || user === 'connected' || user.toLowerCase().includes('studio@') || user.toLowerCase().includes('benanddinah')) {
+  if (user.toLowerCase().includes('studio@') || user.toLowerCase().includes('benanddinah')) {
     currentSender = 'BEN';
-  } else if (user.includes('@')) {
+  } else if (user.length > 0) {
+    // Use first part of email as sender name, uppercased
     currentSender = user.split('@')[0].split('.')[0].toUpperCase();
   } else {
-    currentSender = 'BEN';
+    currentSender = 'BEN'; // default
   }
   const el = document.getElementById('sender-display');
   if (el) el.textContent = currentSender;
@@ -1336,24 +1311,10 @@ function outboxAdd(item){ const q=outboxGet(); q.push(item); outboxSave(q); }
 function outboxRemove(id){ outboxSave(outboxGet().filter(i=>i.id!==id)); }
 function outboxCount(){ return outboxGet().length; }
 
-function showToast(msg){
-  let t=document.getElementById('uplink-toast');
-  if(!t){
-    t=document.createElement('div');
-    t.id='uplink-toast';
-    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#ffaa00;color:#000;font-family:monospace;font-size:11px;font-weight:700;letter-spacing:1px;padding:10px 18px;border-radius:6px;z-index:9999;max-width:85vw;text-align:center;pointer-events:none;transition:opacity .4s';
-    document.body.appendChild(t);
-  }
-  t.textContent=msg;
-  t.style.opacity='1';
-  clearTimeout(t._timer);
-  t._timer=setTimeout(()=>{ t.style.opacity='0'; }, 4000);
-}
-
 function outboxUpdateBadge(){
   const n=outboxCount();
   const badge=document.getElementById('outbox-badge');
-  if(badge){ badge.textContent=n>0?n+' QUEUED':''; badge.style.display=n>0?'flex':'none'; }
+  if(badge){ badge.textContent=n>0?n:''; badge.style.display=n>0?'flex':'none'; }
 }
 
 async function outboxFlush(){
@@ -1418,10 +1379,7 @@ async function transmitToSource(){
         {method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'text/plain; charset=utf-8'},body:md}
       );
       if(resp.ok){ delivered=true; outboxRemove(outboxId); outboxUpdateBadge(); }
-      else{
-        const errBody=await resp.json().catch(()=>({}));
-        console.warn('Graph failed:',resp.status,errBody);
-      }
+      else{ console.warn('Graph failed:',resp.status); }
     }
   }catch(e){ console.warn('Graph error:',e); }
 
@@ -1443,7 +1401,6 @@ function showSentScreen(delivered, filename){
   const titleEl=document.getElementById('sent-title');
   const subtitleEl=document.getElementById('sent-subtitle');
   const deliveryEl=document.getElementById('sent-delivery');
-  const reconnectEl=document.getElementById('sent-reconnect');
   if(delivered){
     titleEl.textContent='SIGNAL TRANSMITTED';
     titleEl.style.color=''; titleEl.style.textShadow='';
@@ -1451,33 +1408,14 @@ function showSentScreen(delivered, filename){
     subtitleEl.style.color='#005500';
     deliveryEl.style.color='#00FF41';
     deliveryEl.textContent='ONEDRIVE DIRECT ✓';
-    if(reconnectEl) reconnectEl.style.display='none';
   } else {
     titleEl.textContent='QUEUED — WILL RETRY';
     titleEl.style.color='#ffaa00';
     titleEl.style.textShadow='0 0 14px #ffaa00';
+    subtitleEl.textContent='SIGNAL SAVED LOCALLY. RECONNECT MICROSOFT TO DELIVER.';
+    subtitleEl.style.color='#886600';
     deliveryEl.style.color='#ffaa00';
     deliveryEl.textContent='PENDING — '+filename;
-    // Diagnose why delivery failed
-    const user=localStorage.getItem('ms_user');
-    const exp=parseInt(localStorage.getItem('ms_exp')||'0');
-    const hasRefresh=!!localStorage.getItem('ms_rt');
-    const hasToken=!!(localStorage.getItem('ms_at'));
-    const tokenExpired=hasToken&&exp<Date.now()&&!hasRefresh;
-    const noToken=!hasToken;
-    if(tokenExpired){
-      subtitleEl.textContent='TOKEN EXPIRED — RECONNECT MICROSOFT TO DELIVER.';
-      subtitleEl.style.color='#ff4400';
-      if(reconnectEl) reconnectEl.style.display='block';
-    } else if(noToken){
-      subtitleEl.textContent='NOT CONNECTED — TAP RECONNECT TO LINK MICROSOFT.';
-      subtitleEl.style.color='#886600';
-      if(reconnectEl) reconnectEl.style.display='block';
-    } else {
-      subtitleEl.textContent='SIGNAL SAVED LOCALLY. WILL RETRY ON NEXT OPEN.';
-      subtitleEl.style.color='#886600';
-      if(reconnectEl) reconnectEl.style.display='none';
-    }
   }
   showScreen('screen-sent');
 }
@@ -1535,20 +1473,16 @@ async function sendRaw(){
     }
   }
 
-  // Option C: Share Sheet (mobile only) or clipboard fallback
+  // Option C: iOS Share Sheet
   if(!sent){
-    const isMobile=/iPhone|iPad|Android/i.test(navigator.userAgent);
-    if(isMobile && navigator.share){
-      try{
-        const file=new File([md],filename,{type:'text/plain'});
-        await navigator.share({title:'Raw Signal '+ts,files:[file]});
-        sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
-      }catch(e){ /* fall through to clipboard */ }
-    }
-    if(!sent){
+    try{
+      const file=new File([md],filename,{type:'text/plain'});
+      await navigator.share({title:'Raw Signal '+ts,files:[file]});
+      sent=true; deliveryMethod='SHARE SHEET — save to OneDrive/Team-Inbox';
+    }catch(e){
       try{await navigator.clipboard.writeText(md);}catch{}
       deliveryMethod='CLIPBOARD — paste manually';
-      showToast('SIGNAL COPIED — paste into Team-Inbox as '+filename);
+      alert('Signal copied. Paste into Team-Inbox as '+filename);
     }
   }
 
@@ -1603,23 +1537,16 @@ async function handleMsCallback(){
       localStorage.setItem('ms_at',data.access_token);
       localStorage.setItem('ms_rt',data.refresh_token||'');
       localStorage.setItem('ms_exp',Date.now()+(data.expires_in*1000));
-      localStorage.removeItem('ms_auth_error');
       try{
         const pl=JSON.parse(atob(data.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-        localStorage.setItem('ms_user',pl.preferred_username||pl.upn||pl.email||pl.unique_name||'connected');
-      }catch{ localStorage.setItem('ms_user','connected'); }
+        localStorage.setItem('ms_user',pl.preferred_username||pl.email||'connected');
+      }catch{}
       localStorage.removeItem('ms_v');localStorage.removeItem('ms_s');
+      // Flush any queued signals now that we have a fresh token
       setTimeout(()=>outboxFlush(), 1000);
       return true;
-    } else {
-      const errMsg=(data.error_description||data.error||'unknown token exchange error');
-      localStorage.setItem('ms_auth_error', errMsg);
-      console.error('Token exchange failed:',data);
     }
-  }catch(e){
-    localStorage.setItem('ms_auth_error','network error: '+e.message);
-    console.error('Token exchange error:',e);
-  }
+  }catch(e){console.error('Token exchange error:',e);}
   return false;
 }
 
@@ -1665,21 +1592,8 @@ function updateMsStatus(){
     if(connectBtn) connectBtn.style.display='none';
     if(disconnectBtn) disconnectBtn.style.display='block';
   } else {
-    const authErr=localStorage.getItem('ms_auth_error');
-    const hasToken=!!(localStorage.getItem('ms_at'));
-    if(authErr){
-      statusEl.textContent='✗ AUTH FAILED: '+authErr;
-      statusEl.style.color='#ff4400';
-    } else if(hasToken){
-      statusEl.textContent='● CONNECTED';
-      statusEl.style.color='#00FF41';
-      if(connectBtn) connectBtn.style.display='none';
-      if(disconnectBtn) disconnectBtn.style.display='block';
-      return;
-    } else {
-      statusEl.textContent='○ NOT CONNECTED';
-      statusEl.style.color='#666600';
-    }
+    statusEl.textContent='○ NOT CONNECTED';
+    statusEl.style.color='#666600';
     if(connectBtn) connectBtn.style.display='block';
     if(disconnectBtn) disconnectBtn.style.display='none';
   }
