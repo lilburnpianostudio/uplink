@@ -495,92 +495,12 @@
     </div>
 
     <!-- Desk phone at rest — shown when handset is inactive -->
-    <div id="desk-phone" style="position:absolute;bottom:10px;right:10px;z-index:14;opacity:0;pointer-events:none;transition:opacity 0.6s;">
-      <svg width="150" height="148" viewBox="0 0 150 148" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="pbody" x1="0.5" y1="0" x2="0.5" y2="1">
-            <stop offset="0%" stop-color="#002800"/>
-            <stop offset="100%" stop-color="#000a00"/>
-          </linearGradient>
-        </defs>
-
-        <!-- ── Base body ── -->
-        <path d="M10,50 Q8,50 6,52 L4,80 Q4,140 8,144 Q10,146 14,146 L136,146 Q140,146 142,144 Q146,140 146,80 L144,52 Q142,50 140,50 Z"
-          stroke="#00FF41" stroke-width="1.2" fill="url(#pbody)"/>
-        <!-- Inner panel recess -->
-        <path d="M18,58 Q16,58 15,60 L13,80 Q13,134 16,137 Q18,138 20,138 L130,138 Q132,138 134,137 Q137,134 137,80 L135,60 Q134,58 132,58 Z"
-          stroke="#003a00" stroke-width="0.7" fill="none" opacity="0.6"/>
-
-        <!-- ── Cradle yoke ── -->
-        <!-- Left pillar -->
-        <rect x="14" y="28" width="22" height="30" rx="4" stroke="#00FF41" stroke-width="1" fill="#001800"/>
-        <!-- Right pillar -->
-        <rect x="114" y="28" width="22" height="30" rx="4" stroke="#00FF41" stroke-width="1" fill="#001800"/>
-        <!-- Yoke top bar -->
-        <rect x="14" y="22" width="122" height="14" rx="5" stroke="#00FF41" stroke-width="1" fill="#001500"/>
-
-        <!-- ── Handset resting in cradle ── -->
-        <path d="M12,28 C6,28 2,32 2,38 C2,44 6,48 12,48
-          C20,48 26,45 36,44 C50,43 100,43 114,44
-          C124,45 130,48 138,48 C144,48 148,44 148,38
-          C148,32 144,28 138,28 C130,28 124,31 114,32
-          C100,33 50,33 36,32 C26,31 20,28 12,28 Z"
-          stroke="#00FF41" stroke-width="1.2" fill="#002200"/>
-        <!-- Earpiece (left) -->
-        <circle cx="16" cy="38" r="12" stroke="#00FF41" stroke-width="1" fill="#001500"/>
-        <circle cx="16" cy="38" r="7" stroke="#00FF41" stroke-width="0.6" fill="none" opacity="0.4"/>
-        <circle cx="16" cy="33" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="21" cy="37" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="21" cy="41" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="16" cy="43" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="11" cy="41" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="11" cy="37" r="2" fill="#00FF41" opacity="0.7"/>
-        <!-- Mouthpiece (right) -->
-        <circle cx="134" cy="38" r="12" stroke="#00FF41" stroke-width="1" fill="#001500"/>
-        <circle cx="134" cy="38" r="7" stroke="#00FF41" stroke-width="0.6" fill="none" opacity="0.4"/>
-        <circle cx="134" cy="33" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="139" cy="37" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="139" cy="41" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="134" cy="43" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="129" cy="41" r="2" fill="#00FF41" opacity="0.7"/>
-        <circle cx="129" cy="37" r="2" fill="#00FF41" opacity="0.7"/>
-
-        <!-- ── Rotary dial ── -->
-        <circle cx="75" cy="98" r="36" stroke="#00FF41" stroke-width="1.2" fill="#001200"/>
-        <circle cx="75" cy="98" r="27" stroke="#00FF41" stroke-width="0.7" fill="none" opacity="0.35"/>
-        <!-- Center hub -->
-        <circle cx="75" cy="98" r="9" stroke="#00FF41" stroke-width="1" fill="#000c00"/>
-        <circle cx="75" cy="98" r="4" fill="#00FF41" opacity="0.5"/>
-        <!-- 10 finger holes -->
-        <circle cx="75" cy="64"  r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <circle cx="95" cy="69"  r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <circle cx="108" cy="83" r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <circle cx="110" cy="100" r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <circle cx="101" cy="117" r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <circle cx="85"  cy="128" r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <circle cx="65"  cy="128" r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <circle cx="49"  cy="117" r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <circle cx="40"  cy="100" r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <circle cx="55"  cy="69"  r="4.5" stroke="#00FF41" stroke-width="0.8" fill="#000500"/>
-        <!-- Finger stop guard -->
-        <path d="M104,70 A30,30 0 0,1 110,98" stroke="#00FF41" stroke-width="2" fill="none" opacity="0.6" stroke-linecap="round"/>
-
-        <!-- ── Coiled cord ── right side -->
-        <path d="M146,90 C152,90 154,94 150,96 C146,98 152,102 150,104 C148,106 154,108 150,110 C146,112 150,116 148,118"
-          stroke="#00FF41" stroke-width="1.8" fill="none" opacity="0.4" stroke-linecap="round"/>
-
-        <!-- ── Base feet ── -->
-        <rect x="20" y="143" width="16" height="5" rx="2" stroke="#00FF41" stroke-width="0.7" fill="#001000"/>
-        <rect x="114" y="143" width="16" height="5" rx="2" stroke="#00FF41" stroke-width="0.7" fill="#001000"/>
-
-        <!-- Standing by pulse -->
-        <circle cx="75" cy="98" r="40" stroke="#00FF41" stroke-width="0.6" fill="none" opacity="0">
-          <animate attributeName="opacity" values="0;0.3;0" dur="3s" repeatCount="indefinite"/>
-          <animate attributeName="r" values="36;44;36" dur="3s" repeatCount="indefinite"/>
-        </circle>
-
-        <text x="75" y="142" text-anchor="middle" font-family="'Courier New',monospace" font-size="6.5" fill="#003300" letter-spacing="3">STANDING BY</text>
-      </svg>
+    <div id="desk-phone" style="position:absolute;bottom:0;right:0;z-index:14;opacity:0;pointer-events:none;transition:opacity 0.6s;">
+      <img src="phone-rotary.png" width="180"
+        style="display:block;
+               filter: invert(1) sepia(1) saturate(8) hue-rotate(90deg) brightness(0.75);
+               mix-blend-mode: screen;"
+        alt=""/>
     </div>
 
   </div>
