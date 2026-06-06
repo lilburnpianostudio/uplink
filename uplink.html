@@ -583,12 +583,18 @@
 
     <!-- Rotary phone — tap to pick up -->
     <div class="cradle-wrap" onclick="newTransmission()" title="Pick up to transmit" style="cursor:pointer;">
-      <img src="phone-rotary.png" width="220"
-        style="display:block; margin:0 auto;
-               filter: grayscale(1) invert(1) sepia(1) hue-rotate(75deg) saturate(2) brightness(0.3);
-               mix-blend-mode: screen;
-               opacity: 0.75;"
-        alt=""/>
+      <div style="position:relative; display:inline-block;">
+        <img src="phone-rotary.png" width="200"
+          style="display:block;
+                 filter: grayscale(1) invert(1) sepia(1) hue-rotate(75deg) saturate(2) brightness(0.3);
+                 mix-blend-mode: screen;
+                 opacity: 0.75;
+                 margin-bottom: -8px;"
+          alt=""/>
+        <!-- Table surface -->
+        <div style="width:240px; height:2px; background: linear-gradient(to right, transparent, #003300 20%, #005500 50%, #003300 80%, transparent); margin: 0 auto;"></div>
+        <div style="width:260px; height:20px; background: linear-gradient(to bottom, #001a00, transparent); margin: 0 auto; opacity:0.6;"></div>
+      </div>
       <div class="pickup-hint">[ PICK UP TO TRANSMIT ]</div>
     </div>
 
